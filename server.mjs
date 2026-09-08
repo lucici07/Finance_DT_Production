@@ -15,7 +15,7 @@ const DB={
 prepare(sql){const statement=sqlite.prepare(sql);let values=[];return {bind(...args){values=args;return this;},async first(){return statement.get(...values)||null;},async run(){return {meta:statement.run(...values)};}};},
 async batch(statements){sqlite.exec('BEGIN IMMEDIATE');try{const results=[];for(const stmt of statements)results.push(await stmt.run());sqlite.exec('COMMIT');return results;}catch(e){sqlite.exec('ROLLBACK');throw e;}}
 };
-const files=['index.html','app.js','sync.js','export.js','export.css','bootstrap.js','shared-workspace.js','sync.css','share.html','share.js','styles.css','details.css','calendar.css','dashboard.css','production.css','vendor/exceljs.min.js'];
+const files=['index.html','app.js','sync.js','export.js','export.css','mobile.js','mobile.css','bootstrap.js','shared-workspace.js','sync.css','share.html','share.js','styles.css','details.css','calendar.css','dashboard.css','production.css','vendor/exceljs.min.js'];
 const assets=Object.fromEntries(files.map(file=>[file,readFileSync(resolve(root,file),'utf8')]));
 const worker=createWorker(assets);
 const server=http.createServer(async(req,res)=>{

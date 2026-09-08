@@ -37,7 +37,7 @@ try{
 const path=new URL(request.url).pathname,method=request.method;
 if(path.startsWith('/api/')){
   if(!env.DB||!env.OWNER_KEY||env.OWNER_KEY.length<6)throw fail(503,'Cloud service is not configured.');
-  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:4});}
+  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:5});}
   if(path.startsWith('/api/shared/')&&['GET','PUT'].includes(method)){
     const token=path.slice('/api/shared/'.length);
     if(!/^[a-f0-9]{64}$/.test(token))throw fail(404,'This link is unavailable or has been revoked.');

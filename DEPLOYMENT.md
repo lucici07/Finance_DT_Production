@@ -69,3 +69,7 @@ Archive packaging after a successful source push and build:
 ## Export formats
 
 Export opens a format and scope selector. Excel preserves one worksheet per selected weekly page, including task IDs for round-trip import. PDF opens the browser print dialog: choose Save as PDF. Each selected weekly tab, including empty tabs, occupies exactly one A3 landscape page. Tables scale to fit without truncating rows; very long tables will use smaller text. This export covers weekly tabs, while the existing Dashboard PDF action remains available separately.
+
+## Responsive mobile layout
+
+mobile.css applies screen-only overrides at widths up to 760px. mobile.js presents the same filtered task data as expandable cards and groups secondary toolbar controls without duplicating handlers. Cloud controls, shared Viewing/Editing, Calendar, Dashboard and print exports remain available. Shared card edits use the existing scoped save API. Touch-emulated tests cover 320/390/412/740px widths, viewport overflow, row/Todo editing, shared access, and return to a 1280px desktop layout. Physical iOS/Android devices were not used for these automated checks.
