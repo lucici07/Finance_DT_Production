@@ -6,7 +6,7 @@ const actions=document.createElement('div'); actions.className='cloud-controls';
 actions.innerHTML='<button id="connectCloud">Connect cloud</button><button id="saveCloud" class="primary">Save</button><button id="shareCloud">Share</button>';
 $c('.titleblock').after(actions);
 const panel=document.createElement('dialog'); panel.className='cloud-dialog';
-panel.innerHTML='<form id="connectForm"><button type="button" id="closeCloud" class="x">Close</button><h2>Cloud workspace</h2><p id="cloudInfo">Checking service...</p><label>Owner key<input id="ownerKey" type="password" autocomplete="off" minlength="32" required></label><button id="loginCloud" class="primary">Connect</button><p id="cloudMessage" role="status"></p><div class="cloud-actions"><button type="button" id="loadCloud">Load cloud version</button><button type="button" id="backupCloud">Download full backup</button><label>Restore full backup<input id="restoreCloud" type="file" accept=".json"></label><button type="button" id="revokeCloud">Revoke all share links</button><button type="button" id="disconnectCloud">Disconnect</button></div></form>';
+panel.innerHTML='<form id="connectForm"><button type="button" id="closeCloud" class="x">Close</button><h2>Cloud workspace</h2><p id="cloudInfo">Checking service...</p><label>Owner password<input id="ownerKey" type="password" autocomplete="off" minlength="6" required></label><button id="loginCloud" class="primary">Connect</button><p id="cloudMessage" role="status"></p><div class="cloud-actions"><button type="button" id="loadCloud">Load cloud version</button><button type="button" id="backupCloud">Download full backup</button><label>Restore full backup<input id="restoreCloud" type="file" accept=".json"></label><button type="button" id="revokeCloud">Revoke all share links</button><button type="button" id="disconnectCloud">Disconnect</button></div></form>';
 document.body.append(panel);
 const sharePanel=document.createElement('dialog'); sharePanel.className='cloud-dialog';
 sharePanel.innerHTML='<form method="dialog"><h2>Shared workspace link</h2><p id="shareInfo"></p><label>Link<input id="shareLink" readonly></label><p id="copyStatus" role="status"></p><button type="button" id="copyLink">Copy link</button> <button>Close</button></form>';
@@ -37,7 +37,7 @@ $c('#connectCloud').textContent='Cloud settings';$c('#cloudMessage').textContent
 }catch(e){key='';fail(e);}finally{busy=false;status();}
 };
 $c('#loadCloud').onclick=async()=>{
-if(busy)return;if(!key)return fail(new Error('Connect with your owner key first.'));busy=true;
+if(busy)return;if(!key)return fail(new Error('Connect with your owner password first.'));busy=true;
 try{const r=await api('workspace');if(!r.state)throw new Error('No cloud save yet.');if(confirm('Download a backup and replace local data with the cloud version?')){backup();load(r);panel.close();}}
 catch(e){fail(e);}finally{busy=false;status();}
 };
@@ -78,7 +78,7 @@ if(r.state&&r.revision>revision){if(before===synced)load(r);else error='Someone 
 },15000);
 status();
 fetch(new URL('api/health',location.href),{cache:'no-store',signal:AbortSignal.timeout(5000)}).then(r=>r.json()).then(r=>{available=r.service==='finance-dt-sync';}).catch(()=>{}).finally(()=>{
-$c('#cloudInfo').textContent=available?'Use your owner key to connect. It stays only in this tab memory. Connect on another device to load your workspace.':'Cloud is not deployed at this address. Local editing and full backups work. Open the cloud-hosted app after deployment.';
+$c('#cloudInfo').textContent=available?'Use your owner password to connect. It stays only in this tab memory. Connect on another device to load your workspace.':'Cloud is not deployed at this address. Local editing and full backups work. Open the cloud-hosted app after deployment.';
 $c('#loginCloud').disabled=!available;if(!available)$c('.production-banner').textContent='Local mode | Cloud deployment required for sync and share';
 });
 })();

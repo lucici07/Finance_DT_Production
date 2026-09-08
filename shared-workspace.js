@@ -6,7 +6,7 @@ controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspa
 $s('.titleblock').after(controls);
 $s('#workspaceMode').disabled=!session.canEdit;
 $s('#saveState').setAttribute('role','status');
-const allowed='#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
+const allowed='#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
 function mayUse(element){return !!element.closest(allowed);}
 function markControls(){
   document.querySelectorAll('button,input,select,textarea').forEach(el=>{
@@ -31,7 +31,7 @@ function gate(e){
     return;
   }
   if(['dblclick','contextmenu','dragstart','drop','paste','submit'].includes(e.type)){
-    if(e.type==='submit'&&(e.target.id==='chatForm'||e.target.closest('#monthPicker,#privacyDialog')))return;
+    if(e.type==='submit'&&(e.target.id==='chatForm'||e.target.closest('#monthPicker,#privacyDialog,#exportDialog')))return;
     if(e.type==='paste'&&e.target.matches('#search,#chatInput'))return;
     e.preventDefault();e.stopImmediatePropagation();return;
   }

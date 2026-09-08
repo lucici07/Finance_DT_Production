@@ -25,7 +25,7 @@ Local data defaults to runtime/plan.sqlite. DATA_DIR selects another directory; 
 
 Use a Node 24 host or the included Dockerfile with:
 - HTTPS termination and a dedicated hostname.
-- OWNER_KEY supplied through the platform secret manager (at least 32 random characters).
+- OWNER_KEY supplied through the platform secret manager (at least 6 characters).
 - HOST=0.0.0.0 and a configured PORT.
 - A persistent volume mounted at DATA_DIR (Docker default /data), writable by the node user.
 - One application instance. This SQLite configuration is not for multiple replicas or ephemeral/serverless filesystems.
@@ -65,3 +65,7 @@ Build output contains a self-contained Worker in dist/server/index.js and Sites 
 Archive packaging after a successful source push and build:
 
 `tar -czf runtime/site-deploy.tar.gz .openai/hosting.json dist/server/index.js dist/server/wrangler.json`
+
+## Export formats
+
+Export opens a format and scope selector. Excel preserves one worksheet per selected weekly page, including task IDs for round-trip import. PDF opens the browser print dialog: choose Save as PDF. Each selected weekly tab, including empty tabs, occupies exactly one A3 landscape page. Tables scale to fit without truncating rows; very long tables will use smaller text. This export covers weekly tabs, while the existing Dashboard PDF action remains available separately.

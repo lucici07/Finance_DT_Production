@@ -36,8 +36,8 @@ const send=(code,body)=>Response.json(body,{status:code,headers});
 try{
 const path=new URL(request.url).pathname,method=request.method;
 if(path.startsWith('/api/')){
-  if(!env.DB||!env.OWNER_KEY||env.OWNER_KEY.length<32)throw fail(503,'Cloud service is not configured.');
-  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:3});}
+  if(!env.DB||!env.OWNER_KEY||env.OWNER_KEY.length<6)throw fail(503,'Cloud service is not configured.');
+  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:4});}
   if(path.startsWith('/api/shared/')&&['GET','PUT'].includes(method)){
     const token=path.slice('/api/shared/'.length);
     if(!/^[a-f0-9]{64}$/.test(token))throw fail(404,'This link is unavailable or has been revoked.');
@@ -67,7 +67,7 @@ if(path.startsWith('/api/')){
     return send(200,{name,headers:hs,rows:state.data[name].map(row=>row.slice(0,hs.length)),updated:saved.updated,revision:saved.revision});
   }
   const supplied=(request.headers.get('authorization')||'').replace(/^Bearer /,'');
-  if(!equal(await hash(supplied),await hash(env.OWNER_KEY)))throw fail(401,'Enter a valid owner key.');
+  if(!equal(await hash(supplied),await hash(env.OWNER_KEY)))throw fail(401,'Enter a valid owner password.');
   await ready(env.DB);
   if(path==='/api/workspace'&&method==='GET'){
     const saved=await env.DB.prepare('SELECT * FROM workspace WHERE id=1').first();

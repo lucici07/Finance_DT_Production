@@ -20,3 +20,5 @@
 !worker.mjs
 !bootstrap.js
 !shared-workspace.js
+!export.js
+!export.css

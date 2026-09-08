@@ -16,8 +16,9 @@
       }));
       window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};
     } else window.workspaceStorage=localStorage;
-    await loadScript('app.js?v=17');
-    await loadScript(window.sharedSession?'shared-workspace.js?v=1':'sync.js?v=2');
+    await loadScript('app.js?v=18');
+    await loadScript('export.js?v=1');
+    await loadScript(window.sharedSession?'shared-workspace.js?v=1':'sync.js?v=3');
     document.body.classList.remove('workspace-loading');
   } catch(error) {
     document.body.classList.remove('workspace-loading');
