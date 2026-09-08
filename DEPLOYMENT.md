@@ -4,7 +4,7 @@ This version provides one owner-managed workspace with local editing, explicit c
 
 ## Current deployment
 
-The existing GitHub Pages workflow remains a static preview. It cannot run the API. Its Save/Share controls explain that cloud deployment is required. The Sites deployment target is https://finance-dt-weekly-plan.gentle-dream-0736.chatgpt.site. Sites uses worker.mjs with managed D1 storage, built by node build-site.mjs. The final deployment status is recorded separately after verification.
+The existing GitHub Pages workflow remains a static preview. It cannot run the API. Its Save/Share controls explain that cloud deployment is required. The Sites deployment target is https://finance-dt-weekly-plan.lucici1007.chatgpt.site. Sites uses worker.mjs with managed D1 storage, built by node build-site.mjs. Version 1 was published successfully and passed live browser/API verification. Temporary verification data has been removed.
 
 Deploy the Node app at the root of a dedicated HTTPS origin. It serves both the editor and API. Keep the same origin for the editor and API; no external CORS endpoint is configured.
 
@@ -38,7 +38,7 @@ Health check: GET /api/health. No cloud account, DNS, credentials, billing, or p
 
 ## Move existing local data to the cloud app
 
-Browser data belongs to its original website address. On the old/static page (after these front-end changes are published), open Connect cloud > Download full backup. Open the new cloud-hosted editor, restore that JSON under Cloud workspace, connect with the owner key, then Save. This JSON contains all weekly pages, custom headers, metadata, and Calendar Todos. Excel export is not a full-workspace migration.
+Browser data belongs to its original website address. On the old/static page (after these front-end changes are published), open Connect cloud > Download full backup. Open the new cloud-hosted editor, connect with the owner key and load the cloud version first, then restore that JSON under Cloud workspace and click Save. This JSON contains all weekly pages, custom headers, metadata, and Calendar Todos. Excel export is not a full-workspace migration.
 
 Save uploads the complete workspace and acknowledges the saved version and time only after the server responds. It does not automatically turn unsynced Calendar Todos into weekly rows. Finish the row/Todo edit form first. Edits made during an upload remain marked as not synced and need another Save.
 
@@ -59,3 +59,7 @@ The managed Sites runtime uses the DB binding from .openai/hosting.json. OWNER_K
 The hosted workspace request limit is 1.8 MB because D1 limits each stored row to 2 MB. The Node/Docker option remains available independently.
 
 Build output contains a self-contained Worker in dist/server/index.js and Sites metadata; it embeds only allowlisted front-end assets. Database contents, tests, local environment files, and source history are not included in the deployment archive.
+
+Archive packaging after a successful source push and build:
+
+`tar -czf runtime/site-deploy.tar.gz .openai/hosting.json dist/server/index.js dist/server/wrangler.json`
