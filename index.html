@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lenovo Finance DT Weekly Plan</title>
+  <title>Lenovo Finance DT Weekly Plan</title><link rel="stylesheet" href="sync.css">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="details.css?v=14" />
   <link rel="stylesheet" href="calendar.css?v=6" />
@@ -24,7 +24,7 @@
       <div class="agenthead"><b>AI Agent</b><button id="closeAgent">×</button></div>
       <div class="agentbody" id="chat">
         <div class="welcome"><div class="spark">✦</div><h2>Hi! 👋</h2><p>I’m your planning assistant. I can summarize progress, spot blockers, and suggest next actions.</p></div>
-        <div class="privacy-note"><b>Privacy-first</b><br><span id="privacyModeText">Local mode: your plan stays in this browser.</span></div>
+        <div class="privacy-note"><b>Privacy-first</b><br><span id="privacyModeText">AI runs locally. Cloud storage is controlled by Save.</span></div>
         <p class="label">Try asking me</p>
         <div class="suggestions">
           <button>Summarize this week</button><button>What are the risks?</button><button>Suggest next priorities</button><button>Which items are overdue?</button>
@@ -70,8 +70,8 @@
   <dialog id="todoDialog" class="todo-dialog"><form id="todoForm"><button type="button" class="x" id="closeTodo">×</button><p class="eyebrow">DAILY PLAN</p><h2 id="todoDialogTitle">Add Todo</h2><label>Title<input name="title" required placeholder="What needs to be done?"></label><label>Details<textarea name="details" placeholder="Notes or desired outcome"></textarea></label><label>Status<select name="status"><option>Not Started</option><option>WIP</option><option>Done</option></select></label><label>Link <span class="optional">Optional</span><input name="link" type="url" placeholder="https://example.com/document"></label><div class="daily-sync-hint">After saving, use <b>Sync to Weekly Plan</b> on the Todo to add Category, Owner, dates, Status, and other weekly details.</div><div class="dialog-actions"><button type="button" id="deleteTodo" class="todo-delete">Delete</button><span></span><button type="button" id="cancelTodo">Cancel</button><button class="primary" type="submit" id="saveTodo">Add Todo</button></div></form></dialog>
   <dialog id="newPageDialog" class="new-page-dialog"><form id="newPageForm"><button type="button" class="x" id="closeNewPage">×</button><p class="eyebrow">WEEKLY PAGE</p><h2>Create a new page</h2><label>Page name<input name="pageName" required placeholder="For example: W3"></label><div class="page-date-note"><b>Automatic week dates</b><span>If the name follows W# (such as W3), its date range will continue automatically from your existing weekly pages.</span><small id="newPageDatePreview"></small></div><div class="dialog-actions"><button type="button" id="cancelNewPage">Cancel</button><button class="primary" type="submit">Create page</button></div></form></dialog>
   <dialog id="monthPicker" class="month-picker"><form method="dialog"><button class="x" value="cancel">×</button><p class="eyebrow">GO TO DATE</p><h2>Choose month and year</h2><div class="wheel-picker"><label>Month<select id="monthWheel" size="5"></select></label><label>Year<select id="yearWheel" size="5"></select></label></div><div class="dialog-actions"><button value="cancel">Cancel</button><button value="default" id="applyMonth" class="primary">Apply</button></div></form></dialog>
-  <dialog id="privacyDialog"><form method="dialog"><button class="x">×</button><p class="eyebrow">AI & DATA</p><h2>Privacy settings</h2><label class="toggleline"><span><b>Use connected AI</b><small>AI connection is disabled. Plan data remains in this browser.</small></span><input id="remoteToggle" type="checkbox" disabled></label><div class="policy"><b>Recommended production setup</b><p>Keep the API key on the server, use SSO and role-based access, send only necessary rows, disable model response storage, and confirm your company’s retention requirements.</p></div><button class="primary" value="default">Done</button></form></dialog>
+  <dialog id="privacyDialog"><form method="dialog"><button class="x">×</button><p class="eyebrow">AI & DATA</p><h2>Privacy settings</h2><label class="toggleline"><span><b>Use connected AI</b><small>AI connection is disabled. Save uploads your workspace when cloud is connected.</small></span><input id="remoteToggle" type="checkbox" disabled></label><div class="policy"><b>Recommended production setup</b><p>Keep the API key on the server, use SSO and role-based access, send only necessary rows, disable model response storage, and confirm your company’s retention requirements.</p></div><button class="primary" value="default">Done</button></form></dialog>
   <script src="vendor/exceljs.min.js"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script><script src="sync.js?v=1"></script>
 </body>
 </html>

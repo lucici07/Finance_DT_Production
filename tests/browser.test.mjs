@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { once } from 'node:events';
+import { chromium } from '@playwright/test';
+import { createPlanServer } from '../server.mjs';
+const key='test-only-owner-key-0123456789abcdef0123456789';
+test('browser Save, Share, new device, conflict and offline behavior',async()=>{
+const server=createPlanServer({ownerKey:key,dbPath:':memory:'});server.listen(0,'127.0.0.1');await once(server,'listening');
+const base='http://127.0.0.1:'+server.address().port;let browser;
+try{
+browser=await chromium.launch({channel:'msedge',headless:true});
+const owner=await browser.newContext(),page=await owner.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.goto(base);
+await page.locator('#connectCloud').click();await page.locator('#loginCloud').waitFor({state:'visible'});
+await page.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);
+await page.locator('#ownerKey').fill(key);await page.locator('#loginCloud').click();
+await page.waitForFunction(()=>!document.querySelector('#connectForm').closest('dialog').open);
+await page.evaluate(()=>{data.W1.push([1,'Category','Shared topic','Details','Owner','2026-09-08','2026-09-10','2026-09-08','WIP','Next','']);data['Next 3 Weeks'].push([1,'Secret category','PRIVATE','Hidden','Owner','High','WIP','','','']);dailyPlans['2026-09-08']=[{title:'PRIVATE TODO'}];save();render();});
+await page.locator('#saveCloud').click();await page.waitForFunction(()=>document.querySelector('#saveState').textContent.startsWith('Synced'));
+page.once('dialog',d=>d.accept());await page.locator('#shareCloud').click();await page.locator('#shareLink').waitFor({state:'visible'});const link=await page.locator('#shareLink').inputValue();
+const visitor=await browser.newContext(),view=await visitor.newPage();await view.goto(link);
+await view.getByRole('cell',{name:'Shared topic',exact:true}).waitFor();
+assert.equal((await view.locator('body').innerText()).includes('PRIVATE'),false);
+assert.equal(await view.locator('#saveCloud').count(),0);
+await page.getByRole('button',{name:'Close',exact:true}).last().click();
+await page.evaluate(()=>{data.W1[0][2]='Updated topic';save();render();});
+assert.match(await page.locator('#saveState').innerText(),/Not synced/);
+await page.locator('#saveCloud').click();await page.waitForFunction(()=>document.querySelector('#saveState').textContent.startsWith('Synced'));
+await view.locator('#viewerRefresh').click();await view.getByRole('cell',{name:'Updated topic',exact:true}).waitFor();
+const device=await browser.newContext({acceptDownloads:true}),other=await device.newPage();await other.goto(base);
+await other.locator('#connectCloud').click();await other.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);await other.locator('#ownerKey').fill(key);
+other.once('dialog',d=>d.accept());await other.locator('#loginCloud').click();await other.getByRole('cell',{name:'Updated topic',exact:true}).waitFor();
+await other.evaluate(()=>{data.W1[0][2]='Other device';save();render();});
+await other.locator('#saveCloud').click();await other.waitForFunction(()=>document.querySelector('#saveState').textContent.startsWith('Synced'));
+await page.evaluate(()=>{data.W1[0][2]='Stale edit';save();render();});await page.locator('#saveCloud').click();
+await page.waitForFunction(()=>document.querySelector('#saveState').textContent.includes('Cloud data changed'));
+await owner.setOffline(true);await page.locator('#saveCloud').click();await page.waitForFunction(()=>document.querySelector('#saveState').textContent.includes('Cannot reach cloud'));await owner.setOffline(false);
+await page.locator('#connectCloud').click();page.once('dialog',d=>d.accept());await page.locator('#revokeCloud').click();await page.getByText('All share links revoked.',{exact:true}).waitFor();
+await view.locator('#viewerRefresh').click();await view.getByText('This link is unavailable or has been revoked.',{exact:true}).waitFor();assert.equal(await view.locator('tbody tr').count(),0);
+assert.deepEqual(errors,[]);
+}finally{await browser?.close();server.close();await once(server,'close');}
+});

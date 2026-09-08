@@ -1,0 +1,10 @@
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+const files=['index.html','app.js','sync.js','share.html','share.js','styles.css','details.css','calendar.css','dashboard.css','production.css','sync.css','vendor/exceljs.min.js'];
+const assets=Object.fromEntries(files.map(file=>[file,readFileSync(file,'utf8')]));
+const validation=readFileSync('state-validation.mjs','utf8');
+const worker=readFileSync('worker.mjs','utf8').replace("import { validState } from './state-validation.mjs';",'');
+mkdirSync('dist/server',{recursive:true});mkdirSync('dist/.openai',{recursive:true});
+writeFileSync('dist/server/index.js',validation+'\n'+worker+'\nconst ASSETS='+JSON.stringify(assets)+';\nexport default createWorker(ASSETS);\n');
+writeFileSync('dist/.openai/hosting.json',readFileSync('.openai/hosting.json'));
+writeFileSync('dist/server/wrangler.json',JSON.stringify({name:'finance-dt-weekly-plan',main:'index.js',compatibility_date:'2026-09-01',d1_databases:[{binding:'DB',database_name:'sites-managed-database',database_id:'00000000-0000-4000-8000-000000000000'}]},null,2));
+console.log('Built self-contained Worker and Sites metadata; no credentials or user data included.');
