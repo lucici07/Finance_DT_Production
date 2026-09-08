@@ -16,7 +16,7 @@
       }));
       window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};
     } else window.workspaceStorage=localStorage;
-    await loadScript('app.js?v=18');
+    await loadScript('app.js?v=19');
     await loadScript('mobile.js?v=1');
     await loadScript('export.js?v=1');
     await loadScript(window.sharedSession?'shared-workspace.js?v=1':'sync.js?v=3');
