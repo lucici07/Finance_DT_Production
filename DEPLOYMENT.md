@@ -1,6 +1,6 @@
 # Cloud Save and Share
 
-This version provides one owner-managed workspace with local editing, explicit cloud Save, and live read-only links for individual weekly pages. It has no Microsoft account login, multi-user editing, or Teams package yet.
+This version provides one owner-managed workspace with local editing, explicit cloud Save, and full-workspace links that open in Viewing with an explicit Editing option. It has no Microsoft account login, account-based collaborator identities or a Teams package.
 
 ## Current deployment
 
@@ -44,9 +44,11 @@ Save uploads the complete workspace and acknowledges the saved version and time 
 
 On another device, connect using the owner key and accept Load cloud version. Replacing local state downloads a full backup first. If a device saves an old revision after another device saved, it receives a conflict instead of overwriting the new version. Back up local edits, load the latest cloud state, and reapply edits. There is no automatic merge.
 
-Share saves first, then generates a link for the currently selected weekly page. All columns and rows on that page are included, regardless of active search/filter; other pages and standalone Calendar Todos are excluded. Information already copied into a weekly row is included. The viewer has search, refresh, and 30-second polling while visible. Renaming a page keeps links working through its stable ID; deleting it makes links unavailable. Links do not expire automatically; Cloud settings > Revoke all share links invalidates every existing link. Previously copied or downloaded content cannot be withdrawn.
+Share saves first, then generates a full-workspace grant. Recipients open the same app with all weekly pages, Calendar and Dashboard, starting at the view selected when shared. They default to Viewing and can explicitly select Editing; Save writes the same cloud workspace through a scoped token, without owner credentials. All forwarded recipients receive the same capability. Sharing and revocation administration still require the owner key. Owner and shared pages refresh saved changes every 15 seconds while visible, protecting unsaved edits and open forms.
 
-The owner key and read-only share tokens are separate. Tokens have 256 bits of randomness and only their hashes are stored in the database. Viewer pages do not load the editing app or write into a recipient's local workspace.
+Shared sessions keep their workspace in tab memory, separate from a visitor's personal localStorage. Save persists edits to cloud; unsaved changes need Save or a downloaded backup before closing the tab. Every reload starts in Viewing. A stale revision is rejected; no automatic merge is attempted.
+
+New grants use workspace_shares. Existing shares rows are untouched and remain page-only/read-only. Generate a new Share link for the full-workspace experience. Owner DELETE /api/shares revokes all grants; DELETE /api/shares/:token revokes just one without affecting others. Revocation is checked again on every write. Previously viewed or downloaded data cannot be withdrawn.
 
 ## Validation
 
@@ -56,7 +58,7 @@ The owner key and read-only share tokens are separate. Tokens have 256 bits of r
 
 The managed Sites runtime uses the DB binding from .openai/hosting.json. OWNER_KEY is stored as a secret in the platform. The local .env.production file is ignored by git and excluded from the build; copy only its value into Connect cloud when logging in. Never share this key. Share links contain separate read-only tokens.
 
-The hosted workspace request limit is 1.8 MB because D1 limits each stored row to 2 MB. The Node/Docker option remains available independently.
+The hosted workspace request limit is 1.8 MB because D1 limits each stored row to 2 MB. The Node/Docker option runs the same Worker handler against local SQLite and uses the same limit.
 
 Build output contains a self-contained Worker in dist/server/index.js and Sites metadata; it embeds only allowlisted front-end assets. Database contents, tests, local environment files, and source history are not included in the deployment archive.
 

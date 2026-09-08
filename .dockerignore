@@ -17,3 +17,6 @@
 !vendor/
 !vendor/**
 !state-validation.mjs
+!worker.mjs
+!bootstrap.js
+!shared-workspace.js

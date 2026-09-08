@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-const files=['index.html','app.js','sync.js','share.html','share.js','styles.css','details.css','calendar.css','dashboard.css','production.css','sync.css','vendor/exceljs.min.js'];
+const files=['index.html','app.js','sync.js','bootstrap.js','shared-workspace.js','share.html','share.js','styles.css','details.css','calendar.css','dashboard.css','production.css','sync.css','vendor/exceljs.min.js'];
 const assets=Object.fromEntries(files.map(file=>[file,readFileSync(file,'utf8')]));
 const validation=readFileSync('state-validation.mjs','utf8');
 const worker=readFileSync('worker.mjs','utf8').replace("import { validState } from './state-validation.mjs';",'');

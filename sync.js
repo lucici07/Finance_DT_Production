@@ -9,7 +9,7 @@ const panel=document.createElement('dialog'); panel.className='cloud-dialog';
 panel.innerHTML='<form id="connectForm"><button type="button" id="closeCloud" class="x">Close</button><h2>Cloud workspace</h2><p id="cloudInfo">Checking service...</p><label>Owner key<input id="ownerKey" type="password" autocomplete="off" minlength="32" required></label><button id="loginCloud" class="primary">Connect</button><p id="cloudMessage" role="status"></p><div class="cloud-actions"><button type="button" id="loadCloud">Load cloud version</button><button type="button" id="backupCloud">Download full backup</button><label>Restore full backup<input id="restoreCloud" type="file" accept=".json"></label><button type="button" id="revokeCloud">Revoke all share links</button><button type="button" id="disconnectCloud">Disconnect</button></div></form>';
 document.body.append(panel);
 const sharePanel=document.createElement('dialog'); sharePanel.className='cloud-dialog';
-sharePanel.innerHTML='<form method="dialog"><h2>Read-only share link</h2><p id="shareInfo"></p><label>Link<input id="shareLink" readonly></label><p id="copyStatus" role="status"></p><button type="button" id="copyLink">Copy link</button> <button>Close</button></form>';
+sharePanel.innerHTML='<form method="dialog"><h2>Shared workspace link</h2><p id="shareInfo"></p><label>Link<input id="shareLink" readonly></label><p id="copyStatus" role="status"></p><button type="button" id="copyLink">Copy link</button> <button>Close</button></form>';
 document.body.append(sharePanel);
 $c('#saveState').setAttribute('role','status');
 $c('.production-banner').textContent='Local edits are saved in this browser | Use Save to sync to cloud';
@@ -33,7 +33,7 @@ try{const r=await api('workspace');error='';
 if(!r.state){revision=0;synced='';updated='';}
 else if(JSON.stringify(r.state)===stateJSON())ack(stateJSON(),r);
 else if(confirm('Load the saved cloud workspace? Your current local data will download as a full backup first. Cancel keeps your local edits.')){backup();load(r);}
-$c('#connectCloud').textContent='Cloud settings';$c('#cloudMessage').textContent='Connected. Save uploads all pages and Calendar Todos. Share publishes the selected weekly page only.';panel.close();
+$c('#connectCloud').textContent='Cloud settings';$c('#cloudMessage').textContent='Connected. Save uploads all pages and Calendar Todos. Share opens the full workspace in Viewing mode, with an Editing option.';panel.close();
 }catch(e){key='';fail(e);}finally{busy=false;status();}
 };
 $c('#loadCloud').onclick=async()=>{
@@ -50,10 +50,11 @@ try{const r=await api('workspace','PUT',{state:JSON.parse(snapshot),revision});a
 $c('#saveCloud').onclick=sync;
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();sync();}});
 $c('#shareCloud').onclick=async()=>{
-if(busy)return;const name=active;
-if(!confirm('Share all rows and columns of "'+name+'"? Anyone with the link can view future saved updates. Other pages and Calendar Todos are excluded.'))return;
+if(busy)return;
+if(!confirm('Share this entire workspace, including every weekly page, Calendar and Dashboard? Recipients start in Viewing and can switch to Editing and Save changes to the same workspace. Anyone you forward the link to receives this access.'))return;
+const initialView={active,view:!$c('#calendarView').classList.contains('hidden')?'calendar':!$c('#dashboardView').classList.contains('hidden')?'dashboard':'weekly',dashboardWeek:$c('#dashboardWeek').value,calendarMonth:dateKey(calendarMonth),selectedDate,search:$c('#search').value,statusFilter:$c('#statusFilter').value,zoom};
 const r=await sync();if(!r)return;busy=true;
-try{const s=JSON.parse(synced),result=await api('shares','POST',{pageId:s.pageMeta[name].id,revision:r.revision}),url=new URL('share.html',location.href);url.hash=result.token;$c('#shareLink').value=url.href;$c('#shareInfo').textContent='"'+name+'" | Latest saved version. Anyone with this link can view, including forwarded recipients.';$c('#copyStatus').textContent='';sharePanel.showModal();}
+try{const result=await api('shares','POST',{scope:'workspace',allowEdit:true,initialView,revision:r.revision}),url=new URL('./',location.href);url.hash='share='+result.token;$c('#shareLink').value=url.href;$c('#shareInfo').textContent='Full workspace | Opens in Viewing. Recipients can switch to Editing and Save changes visible to everyone.';$c('#copyStatus').textContent='';sharePanel.showModal();}
 catch(e){fail(e);}finally{busy=false;status();}
 };
 $c('#copyLink').onclick=async()=>{try{await navigator.clipboard.writeText($c('#shareLink').value);$c('#copyStatus').textContent='Link copied.';}catch{$c('#shareLink').select();$c('#copyStatus').textContent='Select and copy the link above.';}};
@@ -67,6 +68,14 @@ if(!safe(s)||!s.data||!Object.keys(s.data).length||!Array.isArray(s.futureSheets
 if(confirm('Download a backup, then replace local data with this file? Cloud stays unchanged until Save.')){backup();restoreState(JSON.stringify(s));undoStack=[];redoStack=[];updateHistoryButtons();panel.close();status();}}
 catch(e){fail(e);}
 };
+setInterval(async()=>{
+if(!key||busy||document.hidden||$c('#editDrawer').classList.contains('open')||$c('#todoDialog').open||$c('#newPageDialog').open)return;
+const before=stateJSON();
+try{const r=await api('workspace');
+if(busy||!key||stateJSON()!==before||$c('#editDrawer').classList.contains('open')||$c('#todoDialog').open||$c('#newPageDialog').open)return;
+if(r.state&&r.revision>revision){if(before===synced)load(r);else error='Someone saved a newer version. Local edits are retained; use Load cloud version before saving.';status();}
+}catch(e){fail(e);}
+},15000);
 status();
 fetch(new URL('api/health',location.href),{cache:'no-store',signal:AbortSignal.timeout(5000)}).then(r=>r.json()).then(r=>{available=r.service==='finance-dt-sync';}).catch(()=>{}).finally(()=>{
 $c('#cloudInfo').textContent=available?'Use your owner key to connect. It stays only in this tab memory. Connect on another device to load your workspace.':'Cloud is not deployed at this address. Local editing and full backups work. Open the cloud-hosted app after deployment.';

@@ -11,7 +11,8 @@ const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 const equal=(a,b)=>{let diff=a.length^b.length;for(let i=0;i<a.length;i++)diff|=a[i]^b[i];return diff===0;};
 const schemas=[
 'CREATE TABLE IF NOT EXISTS workspace (id INTEGER PRIMARY KEY CHECK(id=1), state TEXT NOT NULL, revision INTEGER NOT NULL, updated TEXT NOT NULL)',
-'CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, page_id TEXT NOT NULL, created TEXT NOT NULL)'
+'CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, page_id TEXT NOT NULL, created TEXT NOT NULL)',
+'CREATE TABLE IF NOT EXISTS workspace_shares (token TEXT PRIMARY KEY, can_edit INTEGER NOT NULL, created TEXT NOT NULL, initial_view TEXT NOT NULL)'
 ];
 const initialized=new WeakMap();
 async function ready(db){
@@ -36,11 +37,28 @@ try{
 const path=new URL(request.url).pathname,method=request.method;
 if(path.startsWith('/api/')){
   if(!env.DB||!env.OWNER_KEY||env.OWNER_KEY.length<32)throw fail(503,'Cloud service is not configured.');
-  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:2});}
-  if(path.startsWith('/api/shared/')&&method==='GET'){
+  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:3});}
+  if(path.startsWith('/api/shared/')&&['GET','PUT'].includes(method)){
     const token=path.slice('/api/shared/'.length);
     if(!/^[a-f0-9]{64}$/.test(token))throw fail(404,'This link is unavailable or has been revoked.');
     await ready(env.DB);
+    const tokenHash=hex(await hash(token));
+    const grant=await env.DB.prepare('SELECT * FROM workspace_shares WHERE token=?').bind(tokenHash).first();
+    if(grant){
+      if(method==='GET'){
+        const workspace=await env.DB.prepare('SELECT * FROM workspace WHERE id=1').first();
+        if(!workspace)throw fail(404,'Shared workspace unavailable.');
+        return send(200,{scope:'workspace',canEdit:!!grant.can_edit,state:JSON.parse(workspace.state),revision:workspace.revision,updated:workspace.updated,initialView:JSON.parse(grant.initial_view)});
+      }
+      if(!grant.can_edit||request.headers.get('X-Workspace-Mode')!=='editing')throw fail(403,'Switch to Editing before saving.');
+      const body=await bodyJSON(request);let valid=false;try{valid=validState(body.state);}catch{}
+      if(!valid||!Number.isSafeInteger(body.revision)||body.revision<1)throw fail(400,'Invalid workspace.');
+      const updated=new Date().toISOString();
+      const result=await env.DB.prepare('UPDATE workspace SET state=?, revision=revision+1, updated=? WHERE id=1 AND revision=? AND EXISTS (SELECT 1 FROM workspace_shares WHERE token=? AND can_edit=1)').bind(JSON.stringify(body.state),updated,body.revision,tokenHash).run();
+      if(result.meta.changes!==1)throw fail(409,'Cloud data changed or share access was revoked. Download a backup, then use Load latest.');
+      return send(200,{revision:body.revision+1,updated});
+    }
+    if(method==='PUT')throw fail(403,'This link does not allow editing.');
     const saved=await env.DB.prepare('SELECT w.state,w.revision,w.updated,s.page_id FROM shares s JOIN workspace w ON w.id=1 WHERE s.token=?').bind(hex(await hash(token))).first();
     if(!saved)throw fail(404,'This link is unavailable or has been revoked.');
     const state=JSON.parse(saved.state),name=Object.keys(state.data).find(name=>state.pageMeta[name]?.id===saved.page_id);
@@ -69,13 +87,29 @@ if(path.startsWith('/api/')){
     const body=await bodyJSON(request),saved=await env.DB.prepare('SELECT * FROM workspace WHERE id=1').first();
     if(!saved||body.revision!==saved.revision)throw fail(409,'Save the current version before sharing.');
     const state=JSON.parse(saved.state);
+    if(body.scope==='workspace'){
+      if(body.allowEdit!==true)throw fail(400,'Workspace sharing requires an explicit editing permission.');
+      const view=body.initialView||{};
+      const initialView={active:typeof view.active==='string'?view.active:'',view:['weekly','calendar','dashboard'].includes(view.view)?view.view:'weekly',dashboardWeek:typeof view.dashboardWeek==='string'?view.dashboardWeek:'',calendarMonth:typeof view.calendarMonth==='string'?view.calendarMonth:'',selectedDate:typeof view.selectedDate==='string'?view.selectedDate:'',search:typeof view.search==='string'?view.search.slice(0,500):'',statusFilter:typeof view.statusFilter==='string'?view.statusFilter:'',zoom:Number.isFinite(view.zoom)?Math.max(60,Math.min(140,view.zoom)):100};
+      const token=hex(crypto.getRandomValues(new Uint8Array(32)));
+      const result=await env.DB.prepare('INSERT INTO workspace_shares SELECT ?,1,?,? FROM workspace WHERE id=1 AND revision=?').bind(hex(await hash(token)),new Date().toISOString(),JSON.stringify(initialView),body.revision).run();
+      if(result.meta.changes!==1)throw fail(409,'Save the current version before sharing.');
+      return send(201,{token,scope:'workspace',canEdit:true});
+    }
     if(typeof body.pageId!=='string'||!Object.values(state.pageMeta).some(meta=>meta.id===body.pageId))throw fail(400,'Page not found.');
     const token=hex(crypto.getRandomValues(new Uint8Array(32)));
     const result=await env.DB.prepare('INSERT INTO shares SELECT ?,?,? FROM workspace WHERE id=1 AND revision=?').bind(hex(await hash(token)),body.pageId,new Date().toISOString(),body.revision).run();
     if(result.meta.changes!==1)throw fail(409,'Save the current version before sharing.');
     return send(201,{token});
   }
-  if(path==='/api/shares'&&method==='DELETE'){await env.DB.prepare('DELETE FROM shares').run();return send(200,{revoked:true});}
+  if(path.startsWith('/api/shares/')&&method==='DELETE'){
+    const token=path.slice('/api/shares/'.length);
+    if(!/^[a-f0-9]{64}$/.test(token))throw fail(400,'Invalid share link.');
+    const tokenHash=hex(await hash(token));
+    await env.DB.batch([env.DB.prepare('DELETE FROM shares WHERE token=?').bind(tokenHash),env.DB.prepare('DELETE FROM workspace_shares WHERE token=?').bind(tokenHash)]);
+    return send(200,{revoked:true});
+  }
+  if(path==='/api/shares'&&method==='DELETE'){await env.DB.batch([env.DB.prepare('DELETE FROM shares'),env.DB.prepare('DELETE FROM workspace_shares')]);return send(200,{revoked:true});}
   throw fail(404,'Not found.');
 }
 if(!['GET','HEAD'].includes(method))throw fail(405,'Method not allowed.');
