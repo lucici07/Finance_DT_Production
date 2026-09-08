@@ -1,6 +1,9 @@
 (async () => {
   const token = new URLSearchParams(location.hash.slice(1)).get('share');
   const loadScript = src => new Promise((resolve,reject) => { const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error('Unable to load the app. Refresh to retry.'));document.body.append(script); });
+  const navigationKey='financeNavigationV1:'+location.pathname+':'+(token||'owner');
+    let rememberedView=null;
+    try{rememberedView=JSON.parse(sessionStorage.getItem(navigationKey)||'null');}catch{}
   try {
     if (token !== null) {
       document.body.classList.add('workspace-loading');
@@ -16,10 +19,20 @@
       }));
       window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};
     } else window.workspaceStorage=localStorage;
-    await loadScript('app.js?v=19');
+    await loadScript('app.js?v=20');
     await loadScript('mobile.js?v=1');
     await loadScript('export.js?v=1');
     await loadScript(window.sharedSession?'shared-workspace.js?v=1':'sync.js?v=3');
+    if(rememberedView){
+      if(data[rememberedView.active])active=rememberedView.active;
+      tabs();render();
+      if(rememberedView.view==='calendar')showCalendar(true);
+      else if(rememberedView.view==='dashboard')showDashboard();
+      else showCalendar(false);
+    }
+    addEventListener('pagehide',()=>{
+      try{sessionStorage.setItem(navigationKey,JSON.stringify({active,view:!document.querySelector('#calendarView').classList.contains('hidden')?'calendar':!document.querySelector('#dashboardView').classList.contains('hidden')?'dashboard':'weekly'}));}catch{}
+    });
     document.body.classList.remove('workspace-loading');
   } catch(error) {
     document.body.classList.remove('workspace-loading');
