@@ -44,17 +44,53 @@ function inferredWeekDate(sheet){const target=Number(sheet.match(/^W(\d+)$/i)?.[
 function sheetWeekTitle(sheet){if(futureSheets.has(sheet))return sheet;const match=sheet.match(/^W(\d+)$/i);if(!match)return sheet;const base=explicitWeekDate(sheet)||inferredWeekDate(sheet);return base?workWeekTitle(base,`Week ${match[1]}`):sheet}
 function sheetWeekRange(sheet){if(futureSheets.has(sheet))return "";const base=explicitWeekDate(sheet)||inferredWeekDate(sheet);return base?workWeekRange(base):""}
 function restoreDailyFromRow(row){const id=dailyIdFromRow(row);if(!id)return;const date=String(cell(row,"Date")||"").slice(0,10)||dateKey(today),note=String(cell(row,"Note")||""),link=note.match(/https?:\/\/[^\s·]+/)?.[0]||"",status=String(cell(row,"Status")||"Not Started");(dailyPlans[date]??=[]).push({title:String(cell(row,"Topic")),details:String(cell(row,"Content")),link,category:String(cell(row,"Category")),owner:String(cell(row,"Focal Name")),status,completed:status==="Done",syncedTo:active,syncId:id});save();render();alert(`Todo restored to ${date}.`)}
+let inlineEdit=null;
+function finishInline(cancel=false,redraw=false){
+ const edit=inlineEdit;if(!edit)return null;inlineEdit=null;
+ const {td,input,sheet,index,col,old,html}=edit,value=input.value;
+ input.onblur=null;td.classList.remove('inline-editing');td.innerHTML=html;
+ let result=index<data[sheet].length?index:null;
+ if(!cancel&&value!==old&&(!window.sharedSession||window.sharedSession.editing)){
+  if(index===data[sheet].length){if(!value.trim())return null;data[sheet].push([...headers(sheet).map(h=>h==='No.'?index+1:h==='Status'?'Not Started':''),uid('task')]);result=index;td.parentElement.dataset.row=String(index);}
+  const row=data[sheet][index];row[col]=pastedCellValue(value,headers(sheet)[col]);
+  if(futureSheets.has(sheet)){const last=columnIndex('Last Update',sheet);if(last>=0)row[last]=localISODate();}
+  syncDailyStatusFromRow(row);save();td.textContent=String(row[col]);selectedRow=index;
+ }
+ if(redraw)render();return result;
+}
+function beginInline(td,index,col){
+ if(window.sharedSession&&!window.sharedSession.editing)return;
+ if(inlineEdit?.td===td)return;
+ finishInline();
+ const name=headers()[col];if(name==='No.'||name==='Last Update'&&futureSheets.has(active))return;
+ const row=data[active][index];if(row&&isDailyOrphan(row))return;
+ const old=String(row?.[col]??''),html=td.innerHTML;
+ const input=document.createElement('textarea');input.className='cell-editor';input.value=old;input.rows=1;input.setAttribute('aria-label',name);
+ td.classList.add('inline-editing');td.replaceChildren(input);
+ inlineEdit={td,input,sheet:active,index,col,old,html};
+ input.onblur=()=>finishInline();
+ input.onkeydown=e=>{
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();finishInline(true);}
+  else if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();e.stopPropagation();finishInline(false,true);}
+  else if(e.key==='Tab'){e.preventDefault();const next=Math.max(0,Math.min(headers().length-1,col+(e.shiftKey?-1:1)));finishInline(false,true);const target=document.querySelector('tr[data-row="'+index+'"] td[data-col="'+next+'"]');if(target){selectedCell={sheet:active,row:index,col:next};beginInline(target,index,next);}}
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){finishInline();}
+ };
+ input.onpaste=e=>{const text=e.clipboardData?.getData('text/plain')||'';if(text.includes('\t')){e.preventDefault();e.stopPropagation();finishInline(true);pasteExcelGrid(text);}};
+ input.focus();input.select();
+}
+
 function render(){
+  finishInline();
   const hs=headers(), si=statusIndex(), q=$("#search").value.toLowerCase(), sf=$("#statusFilter").value;
   thead.innerHTML=`<tr>${hs.map((h,i)=>`<th data-column="${i}" title="Right-click to manage this column">${esc(h)}<span class="resize-handle" data-resize="${i}"></span><button class="column-insert" data-insert-column="${i+1}" title="Add column here">＋</button></th>`).join("")}</tr>`;
   const rows=data[active].filter(r=>(!q||r.some(v=>String(v).toLowerCase().includes(q)))&&(!sf||r[si]===sf));
-  tbody.innerHTML=rows.map(r=>{const ri=data[active].indexOf(r);return `<tr data-row="${ri}" class="${isDailyOrphan(r)?"daily-orphan":""}">${r.slice(0,hs.length).map((v,ci)=>{const h=hs[ci],priority=h==="Priority"?` priority-cell priority-${String(v).toLowerCase()}`:"",selected=selectedCell?.sheet===active&&selectedCell.row===ri&&selectedCell.col===ci?" selected-cell":"";return `<td data-col="${ci}" class="${priority}${selected}">${["Date","Due Date","Last Update"].includes(h)?`<span class="date-chip">${esc(v)}</span>`:ci===si?badge(v):h==="Note"?`${linkify(v)}${isDailyOrphan(r)?'<span class="orphan-label">Daily Todo removed</span>':""}`:esc(v)}</td>`}).join("")}</tr>`}).join("")+`<tr class="empty-add-row" data-empty-row="${data[active].length}">${hs.map((_,ci)=>`<td data-empty-col="${ci}" class="${selectedCell?.sheet===active&&selectedCell.row===data[active].length&&selectedCell.col===ci?"selected-cell":""}">${ci===0?'<button id="addBlankRow" title="Add row">＋</button>':""}</td>`).join("")}</tr>`;
+  tbody.innerHTML=rows.map(r=>{const ri=data[active].indexOf(r);return `<tr data-row="${ri}" class="${isDailyOrphan(r)?"daily-orphan":""}">${hs.map((h,ci)=>{const v=r[ci],priority=h==="Priority"?` priority-cell priority-${String(v).toLowerCase()}`:"",selected=selectedCell?.sheet===active&&selectedCell.row===ri&&selectedCell.col===ci?" selected-cell":"";return `<td data-col="${ci}" class="${priority}${selected}">${["Date","Due Date","Last Update"].includes(h)?`<span class="date-chip">${esc(v)}</span>`:ci===si?badge(v):h==="Note"?`${linkify(v)}${isDailyOrphan(r)?'<span class="orphan-label">Daily Todo removed</span>':""}`:esc(v)}</td>`}).join("")}</tr>`}).join("")+`<tr class="empty-add-row" data-empty-row="${data[active].length}">${hs.map((_,ci)=>`<td data-empty-col="${ci}" class="${selectedCell?.sheet===active&&selectedCell.row===data[active].length&&selectedCell.col===ci?"selected-cell":""}">${ci===0?'<button id="addBlankRow" title="Add row">＋</button>':""}</td>`).join("")}</tr>`;
   const all=data[active], done=all.filter(r=>r[si]==="Done").length;
   $("#metrics").innerHTML=`<div class="metric"><b>${all.length}</b><span>items</span></div><div class="metric"><b>${done}</b><span>done</span></div>`;
   $("#sheetTitle").textContent=sheetWeekTitle(active);
   if(si<0)$("#statusFilter").value="";$("#statusFilter").disabled=si<0;
-  document.querySelectorAll("tbody tr[data-row]").forEach(row=>{row.querySelectorAll("td[data-col]").forEach(td=>{td.onclick=e=>{e.stopPropagation();selectedRow=+row.dataset.row;selectedCell={sheet:active,row:selectedRow,col:+td.dataset.col};document.querySelectorAll("tbody td.selected-cell").forEach(cell=>cell.classList.remove("selected-cell"));td.classList.add("selected-cell")};td.ondblclick=e=>{e.stopPropagation();const item=data[active][+row.dataset.row];if(isDailyOrphan(item)){if(confirm("The linked Daily Todo was deleted. Add it back to Calendar?"))restoreDailyFromRow(item);return}openDrawer(+row.dataset.row)}});row.oncontextmenu=e=>{e.preventDefault();contextRow=+row.dataset.row;const menu=$("#rowMenu");menu.style.left=`${Math.min(e.clientX,innerWidth-185)}px`;menu.style.top=`${Math.min(e.clientY,innerHeight-145)}px`;menu.classList.add("open")}});
-  document.querySelectorAll("[data-empty-col]").forEach(td=>{td.onclick=e=>{e.stopPropagation();selectedRow=null;selectedCell={sheet:active,row:data[active].length,col:+td.dataset.emptyCol};document.querySelectorAll("tbody td.selected-cell").forEach(cell=>cell.classList.remove("selected-cell"));td.classList.add("selected-cell")};td.ondblclick=e=>{e.stopPropagation();openDrawer(null)}});$("#addBlankRow").onclick=e=>{e.stopPropagation();openDrawer(null)};
+  document.querySelectorAll("tbody tr[data-row]").forEach(row=>{row.querySelectorAll("td[data-col]").forEach(td=>{td.onclick=e=>{e.stopPropagation();selectedRow=+row.dataset.row;selectedCell={sheet:active,row:selectedRow,col:+td.dataset.col};document.querySelectorAll("tbody td.selected-cell").forEach(cell=>cell.classList.remove("selected-cell"));td.classList.add("selected-cell");beginInline(td,selectedRow,+td.dataset.col)};td.ondblclick=e=>{e.stopPropagation();finishInline();const item=data[active][+row.dataset.row];if(isDailyOrphan(item)){if(confirm("The linked Daily Todo was deleted. Add it back to Calendar?"))restoreDailyFromRow(item);return}openDrawer(+row.dataset.row)}});row.oncontextmenu=e=>{e.preventDefault();contextRow=+row.dataset.row;const menu=$("#rowMenu");menu.style.left=`${Math.min(e.clientX,innerWidth-185)}px`;menu.style.top=`${Math.min(e.clientY,innerHeight-145)}px`;menu.classList.add("open")}});
+  document.querySelectorAll("[data-empty-col]").forEach(td=>{td.onclick=e=>{e.stopPropagation();selectedRow=null;selectedCell={sheet:active,row:td.parentElement.dataset.row!==undefined?+td.parentElement.dataset.row:data[active].length,col:+td.dataset.emptyCol};document.querySelectorAll("tbody td.selected-cell").forEach(cell=>cell.classList.remove("selected-cell"));td.classList.add("selected-cell");beginInline(td,selectedCell.row,+td.dataset.emptyCol)};td.ondblclick=e=>{e.stopPropagation();const index=finishInline();openDrawer(index)}});$("#addBlankRow").onclick=e=>{e.stopPropagation();openDrawer(null)};
   document.querySelectorAll(".note-link").forEach(link=>link.onclick=e=>e.stopPropagation());
   document.querySelectorAll("th[data-column]").forEach(th=>th.oncontextmenu=e=>{e.preventDefault();contextColumn=+th.dataset.column;openColumnMenu(e)});
   document.querySelectorAll("[data-insert-column]").forEach(button=>button.onclick=e=>{e.preventDefault();e.stopPropagation();insertColumnAt(+button.dataset.insertColumn)});

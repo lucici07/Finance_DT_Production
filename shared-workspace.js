@@ -41,7 +41,7 @@ function gate(e){
 }
 for(const event of ['click','dblclick','contextmenu','dragstart','drop','paste','keydown','submit','input','change'])window.addEventListener(event,gate,true);
 new MutationObserver(markControls).observe(document.querySelector('.app'),{childList:true,subtree:true});
-function draftOpen(){return $s('#editDrawer').classList.contains('open')||$s('#todoDialog').open||$s('#newPageDialog').open;}
+function draftOpen(){return !!inlineEdit||$s('#editDrawer').classList.contains('open')||$s('#todoDialog').open||$s('#newPageDialog').open;}
 function backup(){const u=URL.createObjectURL(new Blob([stateJSON()],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='shared-workspace-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 async function request(method='GET',body){
   let response;
