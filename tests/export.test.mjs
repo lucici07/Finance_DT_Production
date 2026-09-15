@@ -15,7 +15,7 @@ assert.equal((await fetch(base+'/api/workspace',{headers:{Authorization:'Bearer 
 assert.equal((await fetch(base+'/api/workspace',{headers:{Authorization:'Bearer wrong!'}})).status,401);
 browser=await chromium.launch({channel:'msedge',headless:true});
 const page=await browser.newPage({acceptDownloads:true}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.goto(base);await page.locator('#exportBtn').waitFor();
+await page.goto(base);await page.locator('#closeCloud').click();await page.locator('#exportBtn').waitFor();
 await page.evaluate(()=>{
 data={W1:Array.from({length:70},(_,i)=>[i+1,'财务','任务 '+i,'内容 '.repeat(15),'Owner','2026-09-08','','','WIP','Next','']),Empty:[],'Next 3 Weeks':[[1,'Category','Future','<script>unsafe</script>','Owner','High','WIP','','','']]};
 pageMeta={W1:{id:'week1'},Empty:{id:'week2',headers:['No.','中文栏目','Topic']},'Next 3 Weeks':{id:'week3'}};futureSheets=new Set(['Next 3 Weeks']);active='W1';save();tabs();render();

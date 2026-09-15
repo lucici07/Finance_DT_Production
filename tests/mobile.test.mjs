@@ -11,7 +11,7 @@ const base='http://127.0.0.1:'+server.address().port;let browser;
 try{
 browser=await chromium.launch({channel:'msedge',headless:true});
 const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
-const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#connectCloud').waitFor();
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#closeCloud').click();await page.locator('#connectCloud').waitFor();
 await page.evaluate(()=>{data.W1=[[1,'Finance','Quarterly plan review','Check the latest budget and follow up on action items.','Cici','2026-09-08','2026-09-10','','WIP','Review forecast','Note '.repeat(20)],[2,'Operations','Prepare status update','Summarize progress','','2026-09-08','','','Not Started','','']];save();tabs();render();dailyPlans['2026-09-08']=[{title:'Discuss weekly progress',details:'Review actions together',status:'WIP'}];selectedDate='2026-09-08';calendarMonth=new Date('2026-09-01T12:00:00');});
 const noOverflow=async()=>assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
 await noOverflow();assert.equal(await page.locator('.tablewrap>table').isVisible(),false);assert.equal(await page.locator('.mobile-task-card').count(),2);

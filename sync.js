@@ -6,14 +6,14 @@ const actions=document.createElement('div'); actions.className='cloud-controls';
 actions.innerHTML='<button id="connectCloud">Connect cloud</button><button id="saveCloud" class="primary">Save</button><button id="shareCloud">Share</button>';
 $c('.titleblock').after(actions);
 const panel=document.createElement('dialog'); panel.className='cloud-dialog';
-panel.innerHTML='<form id="connectForm"><button type="button" id="closeCloud" class="x">Close</button><h2>Cloud workspace</h2><p id="cloudInfo">Checking service...</p><label>Owner password<input id="ownerKey" type="password" autocomplete="off" minlength="6" required></label><button id="loginCloud" class="primary">Connect</button><p id="cloudMessage" role="status"></p><div class="cloud-actions"><button type="button" id="loadCloud">Load cloud version</button><button type="button" id="backupCloud">Download full backup</button><label>Restore full backup<input id="restoreCloud" type="file" accept=".json"></label><button type="button" id="revokeCloud">Revoke all share links</button><button type="button" id="disconnectCloud">Disconnect</button></div></form>';
+panel.innerHTML='<form id="connectForm"><button type="button" id="closeCloud" class="x">Close</button><h2>Cloud workspace</h2><p class="cloud-connect-hint">请先 Connect cloud 连接云端。连接密码：<strong>lenovo</strong></p><p id="cloudInfo">Checking service...</p><label>Owner password<input id="ownerKey" type="password" autocomplete="off" minlength="6" required></label><button id="loginCloud" class="primary">Connect</button><p id="cloudMessage" role="status"></p><div class="cloud-actions"><button type="button" id="loadCloud">Load cloud version</button><button type="button" id="backupCloud">Download full backup</button><label>Restore full backup<input id="restoreCloud" type="file" accept=".json"></label><button type="button" id="revokeCloud">Revoke all share links</button><button type="button" id="disconnectCloud">Disconnect</button></div></form>';
 document.body.append(panel);
 const sharePanel=document.createElement('dialog'); sharePanel.className='cloud-dialog';
 sharePanel.innerHTML='<form method="dialog"><h2>Shared workspace link</h2><p id="shareInfo"></p><label>Link<input id="shareLink" readonly></label><p id="copyStatus" role="status"></p><button type="button" id="copyLink">Copy link</button> <button>Close</button></form>';
 document.body.append(sharePanel);
 $c('#saveState').setAttribute('role','status');
 $c('.production-banner').textContent='Local edits are saved in this browser | Use Save to sync to cloud';
-function status(){if(!busy)$c('#saveState').textContent=error||(key&&synced===stateJSON()?'Synced | '+new Date(updated).toLocaleString():'Saved locally | Not synced to cloud');}
+function status(){const connected=!!key;$c("#connectCloud").classList.toggle("cloud-connected",connected);$c("#connectCloud").classList.toggle("cloud-disconnected",!connected);$c("#connectCloud").textContent=connected?"Cloud settings":"Connect cloud";if(!busy)$c('#saveState').textContent=error||(key&&synced===stateJSON()?'Synced | '+new Date(updated).toLocaleString():'Saved locally | Not synced to cloud');}
 function fail(e){error=e.message;$c('#cloudMessage').textContent=error;$c('#saveState').textContent=error;}
 function ack(snapshot,result){synced=snapshot;revision=result.revision;updated=result.updated;localStorage.setItem('cloudAckV1',JSON.stringify({state:synced,revision,updated}));}
 async function api(path,method='GET',body){
@@ -77,6 +77,7 @@ if(r.state&&r.revision>revision){if(before===synced)load(r);else error='Someone 
 }catch(e){fail(e);}
 },15000);
 status();
+$c("#loginCloud").disabled=true;panel.showModal();
 fetch(new URL('api/health',location.href),{cache:'no-store',signal:AbortSignal.timeout(5000)}).then(r=>r.json()).then(r=>{available=r.service==='finance-dt-sync';}).catch(()=>{}).finally(()=>{
 $c('#cloudInfo').textContent=available?'Use your owner password to connect. It stays only in this tab memory. Connect on another device to load your workspace.':'Cloud is not deployed at this address. Local editing and full backups work. Open the cloud-hosted app after deployment.';
 $c('#loginCloud').disabled=!available;if(!available)$c('.production-banner').textContent='Local mode | Cloud deployment required for sync and share';

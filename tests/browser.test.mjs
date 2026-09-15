@@ -10,7 +10,7 @@ const base='http://127.0.0.1:'+server.address().port;let browser;
 try{
 browser=await chromium.launch({channel:'msedge',headless:true});
 const owner=await browser.newContext(),page=await owner.newPage(),errors=[];
-page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#connectCloud').click();await page.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);
+page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#loginCloud').waitFor();await page.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);
 await page.locator('#ownerKey').fill(key);await page.locator('#loginCloud').click();await page.waitForFunction(()=>!document.querySelector('#connectForm').closest('dialog').open);
 await page.evaluate(()=>{data.W1.push([1,'Category','Shared topic','Details','Owner','2026-09-08','2026-09-10','2026-09-08','WIP','Next','']);data['Next 3 Weeks'].push([1,'Next category','Future topic','Future details','Owner','High','WIP','','','']);dailyPlans['2026-09-08']=[{title:'Calendar topic'}];save();render();selectedDate='2026-09-08';calendarMonth=new Date('2026-09-01T12:00:00');showCalendar(true);});
 page.once('dialog',d=>d.accept());await page.locator('#shareCloud').click();await page.locator('#shareLink').waitFor({state:'visible'});const link=await page.locator('#shareLink').inputValue();

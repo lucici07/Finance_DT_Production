@@ -3,7 +3,7 @@
   const tools=document.createElement('details');tools.className='mobile-tools';
   const summary=document.createElement('summary');summary.textContent='More tools';tools.append(summary);
   const body=document.createElement('div');body.className='mobile-tools-body';tools.append(body);toolbar.append(tools);
-  const advanced=['.history-controls','#refreshBtn','#resetBtn','.toolbar > .button','#columnsBtn','#editBtn','.zoom-control'].map(selector=>document.querySelector(selector)).filter(Boolean).map(element=>{const marker=document.createComment('toolbar position');element.before(marker);return {element,marker};});
+  const advanced=['.history-controls','#refreshBtn','.toolbar > .button','#columnsBtn','#editBtn','.zoom-control'].map(selector=>document.querySelector(selector)).filter(Boolean).map(element=>{const marker=document.createComment('toolbar position');element.before(marker);return {element,marker};});
   const list=document.createElement('div');list.className='mobile-task-list';list.setAttribute('aria-label','Weekly tasks');document.querySelector('.tablewrap').append(list);
   const expanded=new Set();
   function cards(){
