@@ -2,12 +2,12 @@
 const session=window.sharedSession,$s=s=>document.querySelector(s);
 let revision=session.revision,synced=stateJSON(),updated=session.updated,busy=false,revoked=false,error='';
 const controls=document.createElement('div');controls.className='cloud-controls share-session-controls';
-controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload" title="Reload the latest saved cloud version. You can download a backup before replacing unsaved edits.">Load latest</button><button id="sharedBackup" title="Download this workspace as a JSON file that you can import later.">Download backup</button><button id="sharedShare">Share</button><a href="./" target="_blank" rel="noopener noreferrer" class="button" title="Open a blank workspace in a new tab. This workspace stays open.">New workspace</a>';
+controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload" class="sync-indicator" aria-label="Sync status" title="Checking sync status"></button><button id="sharedShare">Share</button>';
 $s('.titleblock').after(controls);
 $s('#workspaceMode').disabled=!session.canEdit;
 $s('#saveState').setAttribute('role','status');
 $s('#sharedShare').onclick=async()=>{const url=location.href;try{await navigator.clipboard.writeText(url);alert('Workspace link copied. Keep this link to reopen your content. Anyone with this link can view and switch to Editing.');}catch{prompt('Copy and keep your workspace link:',url);}};
-const allowed='#workspaceLibrary,#libraryDialog,#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
+const allowed='#workspaceViews,#workspaceLibrary,#libraryDialog,#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
 function mayUse(element){return !!element.closest(allowed);}
 function markControls(){
   document.querySelectorAll('button,input,select,textarea').forEach(el=>{
@@ -22,6 +22,10 @@ function status(){
   document.body.classList.toggle('workspace-viewing',!session.editing);
   $s('.production-banner').textContent=revoked?'Share access revoked':session.editing?'Editing shared workspace | Save updates the same workspace for everyone':'Viewing shared workspace | Switch to Editing to make changes';
   if(!busy)$s('#saveState').textContent=error||(synced===stateJSON()?'Latest cloud save | '+new Date(updated).toLocaleString():'Unsaved changes in this tab');
+  const pending=stateJSON()!==synced||draftOpen(),indicator=$s('#sharedReload');
+  indicator.dataset.sync=error||revoked?'error':pending||busy?'pending':'synced';
+  indicator.title=error||revoked?'Sync needs attention. Click to reload the latest cloud version.':pending?'Unsaved changes. Click Save to sync.':busy?'Syncing...':'Synced. Click to check the latest cloud version.';
+  indicator.setAttribute('aria-label',indicator.title);
   markControls();
 }
 function gate(e){
@@ -42,13 +46,13 @@ function gate(e){
 for(const event of ['click','dblclick','contextmenu','dragstart','drop','paste','keydown','submit','input','change'])window.addEventListener(event,gate,true);
 new MutationObserver(markControls).observe(document.querySelector('.app'),{childList:true,subtree:true});
 function draftOpen(){return !!inlineEdit||$s('#editDrawer').classList.contains('open')||$s('#todoDialog').open||$s('#newPageDialog').open;}
-function backup(){const u=URL.createObjectURL(new Blob([stateJSON()],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='shared-workspace-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 async function request(method='GET',body){
   let response;
   try{response=await fetch(new URL('api/shared/'+session.token,location.href),{method,headers:body?{'Content-Type':'application/json','X-Workspace-Mode':'editing'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(20000)});}
-  catch{throw new Error('Cannot reach cloud. Changes remain in this tab; retry or download a backup.');}
+  catch{throw new Error('Cannot reach cloud. Changes remain in this tab. Retry when connected.');}
   const result=await response.json();
   if(!response.ok){
+    if(response.status===409)throw new Error('Cloud data changed. Your edits remain in this view. Click the sync indicator to reload the latest cloud version.');
     if([403,404].includes(response.status)){revoked=true;session.editing=false;$s('#workspaceMode').disabled=true;}
     throw new Error(result.error||'Unable to load workspace.');
   }
@@ -64,20 +68,20 @@ restoreState=function(...args){oldRestore(...args);status();};
 async function saveCloud(){
   if(busy||!session.editing||revoked)return false;
   if(draftOpen()){alert('Finish or close the item being edited before Save.');return false;}
-  busy=true;error='';$s('#saveState').textContent='Syncing...';markControls();
+  busy=true;error='';$s('#saveState').textContent='Syncing...';status();
   const snapshot=stateJSON();
   try{const result=await request('PUT',{state:JSON.parse(snapshot),revision});revision=result.revision;updated=result.updated;synced=snapshot;return synced===stateJSON();}
   catch(e){error=e.message;return false;}finally{busy=false;status();}
 }
 async function refresh(force=false){
   if(busy||revoked||draftOpen())return false;
-  if(force&&stateJSON()!==synced){if(!confirm('Download a backup of your edits, then load the latest cloud version?'))return false;backup();}
+  if(force&&stateJSON()!==synced){if(!confirm('Discard your unsaved edits and reload the latest cloud version? Cancel keeps your edits.'))return false;}
   const before=stateJSON();busy=true;
   try{
     const result=await request();
     if(draftOpen()||before!==stateJSON())return false;
     if(force||stateJSON()===synced){if(result.revision!==revision||force)apply(result);}
-    else if(result.revision!==revision)error='Someone saved a newer version. Your edits are retained; use Load latest before saving.';
+    else if(result.revision!==revision)error='Someone saved a newer version. Your edits are retained. Click the sync indicator to reload the cloud version before saving.';
     return true;
   }catch(e){error=e.message;return false;}finally{busy=false;status();}
 }
@@ -94,7 +98,18 @@ $s('#workspaceMode').onchange=async e=>{
   }
   status();
 };
-$s('#sharedSave').onclick=saveCloud;$s('#sharedReload').onclick=()=>refresh(true);$s('#sharedBackup').onclick=backup;
+$s('#sharedSave').onclick=saveCloud;$s('#sharedReload').onclick=()=>refresh(true);
+window.prepareWorkspaceSwitch=async()=>{
+ finishInline();
+ if(busy)return false;
+ if(draftOpen()){alert('Finish or close the item being edited before switching workspace views.');return false;}
+ if(stateJSON()!==synced){if(!confirm('Save your changes before switching workspace views? Cancel stays here.'))return false;return await saveCloud();}
+ return true;
+};
+document.addEventListener('inline-edit-finished',status);
+document.addEventListener('click',e=>{if(e.target.closest('#closeDrawer,#cancelRow,#closeTodo,#cancelTodo'))status();});
+document.addEventListener('input',e=>{if(e.target.closest('#rowForm,#todoForm,.cell-editor'))status();});
+document.addEventListener('focusin',e=>{if(e.target.closest('.cell-editor'))status();});
 document.addEventListener('keydown',e=>{if(session.editing&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveCloud();}});
 addEventListener('beforeunload',e=>{if(stateJSON()!==synced||session.editing&&draftOpen()){e.preventDefault();e.returnValue='';}});
 const view=session.initialView||{};

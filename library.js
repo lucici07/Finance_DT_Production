@@ -5,15 +5,44 @@ function read(){try{const value=JSON.parse(localStorage.getItem(key)||'[]');retu
 function write(items){localStorage.setItem(key,JSON.stringify(items));}
 const token=window.sharedSession?.token;
 let storageError='';
-if(token){try{const items=read(),existing=items.find(item=>item.token===token);if(existing)existing.opened=Date.now();else items.unshift({token,name:'Workspace '+new Date().toLocaleString(),folder:'General',opened:Date.now()});write(items);}catch{storageError='Browser storage is unavailable. Keep your workspace link or download a backup.';}}
-const button=document.createElement('button');button.id='workspaceLibrary';button.textContent='My workspaces';document.querySelector('.cloud-controls').append(button);
+if(token){try{const items=read(),existing=items.find(item=>item.token===token);if(existing)existing.opened=Date.now();else items.unshift({token,name:'Workspace '+new Date().toLocaleString(),folder:'General',opened:Date.now()});write(items);}catch{storageError='Browser storage is unavailable. Keep your workspace link to reopen this view.';}}
+const bar=document.createElement('nav');bar.id='workspaceViews';bar.className='workspace-views';bar.setAttribute('aria-label','Workspace views');
+const heading=document.createElement('strong');heading.textContent='Workspace views';
+const tabs=document.createElement('div');tabs.className='workspace-view-tabs';
+const add=document.createElement('button');add.id='newWorkspaceView';add.textContent='+ New view';
+const button=document.createElement('button');button.id='workspaceLibrary';button.textContent='Manage views';
+bar.append(heading,tabs,add,button);document.querySelector('.topbar').before(bar);document.body.classList.add('workspace-ui');
+let switching=false;
+async function navigate(url){if(switching)return;if(window.prepareWorkspaceSwitch&&!await window.prepareWorkspaceSwitch())return;location.assign(url);}
+function renderViews(){
+ tabs.replaceChildren();
+ if(!token){const draft=document.createElement('button');draft.textContent='New workspace';draft.className='workspace-view active';draft.setAttribute('aria-current','page');tabs.append(draft);}
+ const items=read();if(token&&!items.some(i=>i.token===token))items.push({token,name:'Current workspace',folder:'General'});
+ for(const item of items){const tab=document.createElement('button');tab.className='workspace-view'+(item.token===token?' active':'');tab.textContent=item.name;tab.title=item.name;tab.dataset.workspace=item.token;if(item.token===token)tab.setAttribute('aria-current','page');tab.onclick=()=>{if(item.token!==token)navigate(urlFor(item));};tabs.append(tab);}
+}
+add.onclick=async()=>{
+ if(switching)return;
+ if(window.prepareWorkspaceSwitch&&!await window.prepareWorkspaceSwitch())return;
+ const name=prompt('Name your new workspace view:','Workspace '+(read().length+1))?.trim();if(!name)return;
+ switching=true;add.disabled=true;
+ try{
+ const state={data:{W1:[],'Next 3 Weeks':[]},futureSheets:['Next 3 Weeks'],dailyPlans:{},pageMeta:{W1:{id:crypto.randomUUID()},'Next 3 Weeks':{id:crypto.randomUUID()}}};
+ const response=await fetch(new URL('api/workspaces',location.href),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({state,initialView:{active:'W1',view:'weekly'}}),signal:AbortSignal.timeout(20000)});
+ if(!response.ok)throw new Error('Unable to create a workspace view. Please try again.');
+ const result=await response.json(),item={token:result.token,name:name.slice(0,120),folder:'General',opened:Date.now()};
+ try{const items=read();items.push(item);write(items);}catch{}
+ location.assign(urlFor(item));
+ }catch(error){alert(error.message);}finally{switching=false;add.disabled=false;}
+};
+
 const dialog=document.createElement('dialog');dialog.id='libraryDialog';dialog.className='cloud-dialog workspace-library';
-dialog.innerHTML='<form method="dialog"><button class="x">Close</button><h2>My workspaces</h2><p>Saved links in this browser only. Opening a new workspace does not delete previous ones.</p><label>Folder<select id="libraryFolder"></select></label><p id="libraryMessage" role="status"></p><div id="libraryItems"></div><button type="button" id="libraryExport">Export workspace list</button><label class="button">Import workspace list<input id="libraryImport" type="file" accept=".json" hidden></label><p>To restore a workspace JSON backup, use Import backup on the main page.</p></form>';
+dialog.innerHTML='<form method="dialog"><button class="x">Close</button><h2>Manage workspace views</h2><p>Saved links in this browser only. Opening a new workspace does not delete previous ones.</p><label>Folder<select id="libraryFolder"></select></label><p id="libraryMessage" role="status"></p><div id="libraryItems"></div><button type="button" id="libraryExport">Export workspace list</button><label class="button">Import workspace list<input id="libraryImport" type="file" accept=".json" hidden></label><p>To restore a workspace JSON backup, use Import backup on the main page.</p></form>';
 document.body.append(dialog);
 const folder=dialog.querySelector('#libraryFolder'),message=dialog.querySelector('#libraryMessage'),list=dialog.querySelector('#libraryItems');
 const urlFor=item=>{const url=new URL('./',location.href);url.hash='share='+item.token;return url.href;};
 function mutate(action){try{const items=read();action(items);write(items);render();}catch{message.textContent='Unable to save this list in the browser. Export it or keep your workspace links.';}}
 function render(){
+renderViews();
 const items=read().sort((a,b)=>(b.opened||0)-(a.opened||0)),selected=folder.value;
 folder.replaceChildren(new Option('All folders',''));
 for(const name of [...new Set(items.map(i=>i.folder))].sort())folder.add(new Option(name,name));
@@ -35,7 +64,8 @@ for(const item of visible){
  card.append(name,group,actions);list.append(card);
 }
 }
-button.onclick=()=>{render();dialog.showModal();};folder.onchange=render;
+button.onclick=()=>{render();dialog.showModal();};folder.onchange=render;renderViews();
+addEventListener('storage',e=>{if(e.key===key){renderViews();if(dialog.open)render();}});
 dialog.querySelector('#libraryExport').onclick=()=>{
  const url=URL.createObjectURL(new Blob([JSON.stringify({format:'finance-workspace-links-v1',workspaces:read()})],{type:'application/json'}));
  const a=document.createElement('a');a.href=url;a.download='workspace-links.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

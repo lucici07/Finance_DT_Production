@@ -46,7 +46,7 @@ function sheetWeekRange(sheet){if(futureSheets.has(sheet))return "";const base=e
 function restoreDailyFromRow(row){const id=dailyIdFromRow(row);if(!id)return;const date=String(cell(row,"Date")||"").slice(0,10)||dateKey(today),note=String(cell(row,"Note")||""),link=note.match(/https?:\/\/[^\s·]+/)?.[0]||"",status=String(cell(row,"Status")||"Not Started");(dailyPlans[date]??=[]).push({title:String(cell(row,"Topic")),details:String(cell(row,"Content")),link,category:String(cell(row,"Category")),owner:String(cell(row,"Focal Name")),status,completed:status==="Done",syncedTo:active,syncId:id});save();render();alert(`Todo restored to ${date}.`)}
 let inlineEdit=null;
 function finishInline(cancel=false,redraw=false){
- const edit=inlineEdit;if(!edit)return null;inlineEdit=null;
+ const edit=inlineEdit;if(!edit)return null;inlineEdit=null;document.dispatchEvent(new Event("inline-edit-finished"));
  const {td,input,sheet,index,col,old,html}=edit,value=input.value;
  input.onblur=null;td.classList.remove('inline-editing');td.innerHTML=html;
  let result=index<data[sheet].length?index:null;

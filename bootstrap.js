@@ -20,20 +20,25 @@
       }));
       window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};
     } else {const values=new Map();window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};rememberedView=null;}
-    await loadScript('app.js?v=22');
+    await loadScript('app.js?v=23');
     await loadScript('mobile.js?v=1');
     await loadScript('export.js?v=1');
-    await loadScript(window.sharedSession?'shared-workspace.js?v=4':'entry.js?v=1');
-    await loadScript('library.js?v=1');
+    await loadScript(window.sharedSession?'shared-workspace.js?v=5':'entry.js?v=2');
+    await loadScript('library.js?v=2');
     if(rememberedView){
       if(data[rememberedView.active])active=rememberedView.active;
+      if(typeof rememberedView.search==='string')document.querySelector('#search').value=rememberedView.search;
+      if(typeof rememberedView.statusFilter==='string')document.querySelector('#statusFilter').value=rememberedView.statusFilter;
+      if(rememberedView.calendarMonth)calendarMonth=new Date(rememberedView.calendarMonth+'T12:00:00');
+      if(rememberedView.selectedDate)selectedDate=rememberedView.selectedDate;
+      if(rememberedView.dashboardWeek&&data[rememberedView.dashboardWeek]){renderDashboard();document.querySelector('#dashboardWeek').value=rememberedView.dashboardWeek;}
       tabs();render();
       if(rememberedView.view==='calendar')showCalendar(true);
       else if(rememberedView.view==='dashboard')showDashboard();
       else showCalendar(false);
     }
     addEventListener('pagehide',()=>{
-      try{sessionStorage.setItem(navigationKey,JSON.stringify({active,view:!document.querySelector('#calendarView').classList.contains('hidden')?'calendar':!document.querySelector('#dashboardView').classList.contains('hidden')?'dashboard':'weekly'}));}catch{}
+      try{sessionStorage.setItem(navigationKey,JSON.stringify({active,dashboardWeek:document.querySelector('#dashboardWeek').value,calendarMonth:dateKey(calendarMonth),selectedDate,search:document.querySelector('#search').value,statusFilter:document.querySelector('#statusFilter').value,view:!document.querySelector('#calendarView').classList.contains('hidden')?'calendar':!document.querySelector('#dashboardView').classList.contains('hidden')?'dashboard':'weekly'}));}catch{}
     });
     document.body.classList.remove('workspace-loading');
   } catch(error) {

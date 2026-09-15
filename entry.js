@@ -14,15 +14,7 @@ document.querySelector('#entryImport').onchange=async e=>{
  restoreState(JSON.stringify(value));save();
  }catch(error){alert(error.message);}
 };
-try{
- if(localStorage.getItem('financePlanProductionV1')){
- const recover=document.createElement('button');recover.textContent='Download previous browser backup';controls.append(recover);
- recover.onclick=()=>{
- const saved={data:JSON.parse(localStorage.getItem('financePlanProductionV1')),futureSheets:JSON.parse(localStorage.getItem('futureSheetsProductionV1')||'[]'),dailyPlans:JSON.parse(localStorage.getItem('dailyPlansProductionV1')||'{}'),pageMeta:JSON.parse(localStorage.getItem('pageMetaProductionV1')||'{}')};
- const url=URL.createObjectURL(new Blob([JSON.stringify(saved)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='previous-browser-workspace.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
- };
- }
-}catch{}
+window.prepareWorkspaceSwitch=async()=>{finishInline();if(stateJSON()!==initial||document.querySelector('#editDrawer').classList.contains('open')||document.querySelector('#todoDialog').open){alert('Save this draft before switching workspace views.');return false;}return true;};
 const initial=stateJSON();let busy=false,leaving=false;
 const oldSave=save;save=function(...args){oldSave(...args);document.querySelector('#saveState').textContent='Draft in this tab | Save to create your workspace link';};
 document.querySelector('#saveState').textContent='Default template | No personal workspace loaded';
