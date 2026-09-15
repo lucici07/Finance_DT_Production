@@ -23,7 +23,8 @@
     await loadScript('app.js?v=22');
     await loadScript('mobile.js?v=1');
     await loadScript('export.js?v=1');
-    await loadScript(window.sharedSession?'shared-workspace.js?v=3':'entry.js?v=1');
+    await loadScript(window.sharedSession?'shared-workspace.js?v=4':'entry.js?v=1');
+    await loadScript('library.js?v=1');
     if(rememberedView){
       if(data[rememberedView.active])active=rememberedView.active;
       tabs();render();

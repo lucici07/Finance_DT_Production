@@ -2,3 +2,7 @@
 .workspace-loading>*{visibility:hidden}.workspace-loading::before{content:"Loading shared workspace...";display:block;padding:30px;font:16px system-ui}.share-load-error{display:block;margin:40px;padding:24px}.workspace-mode-label{display:flex;align-items:center;gap:6px}.workspace-mode-label select{padding:8px;border:1px solid #ccc;border-radius:6px}.workspace-viewing .viewing-disabled{opacity:.4;cursor:default}.workspace-viewing .resize-handle{pointer-events:none}.workspace-viewing .empty-add-row{display:none}.share-session-controls{flex-wrap:wrap}.share-session-controls #sharedBackup{font-size:11px}
 
 #connectCloud.cloud-connected{background:#15803d;color:#fff;border:2px solid #166534;font-weight:700}#connectCloud.cloud-disconnected{background:#facc15;color:#422006;border:2px solid #ca8a04;font-weight:700}.cloud-connect-hint{padding:12px;background:#fef9c3;color:#422006;border-radius:8px}
+
+.workspace-library{width:min(760px,calc(100vw - 24px));max-height:85dvh;overflow:auto}.library-item{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-bottom:1px solid #d1d5db}.library-actions{display:flex;gap:8px;flex-wrap:wrap}.library-actions a{display:inline-flex;align-items:center;text-decoration:none}.workspace-library .library-actions button{min-height:40px}
+
+.workspace-library{box-sizing:border-box;max-width:calc(100vw - 24px)}.library-item{overflow-wrap:anywhere}.workspace-library select{max-width:100%}

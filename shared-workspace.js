@@ -2,12 +2,12 @@
 const session=window.sharedSession,$s=s=>document.querySelector(s);
 let revision=session.revision,synced=stateJSON(),updated=session.updated,busy=false,revoked=false,error='';
 const controls=document.createElement('div');controls.className='cloud-controls share-session-controls';
-controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload">Load latest</button><button id="sharedBackup">Download backup</button><button id="sharedShare">Share</button><a href="./" class="button">New workspace</a>';
+controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload" title="Reload the latest saved cloud version. You can download a backup before replacing unsaved edits.">Load latest</button><button id="sharedBackup" title="Download this workspace as a JSON file that you can import later.">Download backup</button><button id="sharedShare">Share</button><a href="./" target="_blank" rel="noopener noreferrer" class="button" title="Open a blank workspace in a new tab. This workspace stays open.">New workspace</a>';
 $s('.titleblock').after(controls);
 $s('#workspaceMode').disabled=!session.canEdit;
 $s('#saveState').setAttribute('role','status');
 $s('#sharedShare').onclick=async()=>{const url=location.href;try{await navigator.clipboard.writeText(url);alert('Workspace link copied. Keep this link to reopen your content. Anyone with this link can view and switch to Editing.');}catch{prompt('Copy and keep your workspace link:',url);}};
-const allowed='#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
+const allowed='#workspaceLibrary,#libraryDialog,#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
 function mayUse(element){return !!element.closest(allowed);}
 function markControls(){
   document.querySelectorAll('button,input,select,textarea').forEach(el=>{
@@ -32,7 +32,7 @@ function gate(e){
     return;
   }
   if(['dblclick','contextmenu','dragstart','drop','paste','submit'].includes(e.type)){
-    if(e.type==='submit'&&(e.target.id==='chatForm'||e.target.closest('#monthPicker,#privacyDialog,#exportDialog')))return;
+    if(e.type==='submit'&&(e.target.id==='chatForm'||e.target.closest('#monthPicker,#privacyDialog,#exportDialog,#libraryDialog')))return;
     if(e.type==='paste'&&e.target.matches('#search,#chatInput'))return;
     e.preventDefault();e.stopImmediatePropagation();return;
   }
