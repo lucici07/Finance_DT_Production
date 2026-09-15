@@ -15,6 +15,8 @@ function markControls(){
     el.classList.toggle('viewing-disabled',blocked);
     if(blocked)el.setAttribute('aria-disabled','true');else if(el.classList.contains('viewing-disabled')===false)el.removeAttribute('aria-disabled');
   });
+  const importInput=$s('#importInput'),importLabel=importInput.closest('label'),blocked=!session.editing||revoked;
+  importInput.disabled=blocked;importLabel.classList.toggle('viewing-disabled',blocked);importLabel.setAttribute('aria-disabled',String(blocked));importLabel.title=blocked?'Switch to Editing to import Excel.':'Import an Excel workbook into this workspace.';
   $s('#sharedSave').disabled=!session.editing||busy||revoked;
 }
 function status(){
