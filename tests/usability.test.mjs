@@ -3,18 +3,13 @@ import assert from 'node:assert/strict';
 import {once} from 'node:events';
 import {chromium} from '@playwright/test';
 import {createPlanServer} from '../server.mjs';
-test('connection prompt, page protection, future paste and scoped clear',async()=>{
+test('blank entry, page protection, future paste and scoped clear',async()=>{
 const server=createPlanServer({ownerKey:'lenovo',dbPath:':memory:'});server.listen(0,'127.0.0.1');await once(server,'listening');
 const browser=await chromium.launch({channel:'msedge',headless:true});
 try{
 const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.goto('http://127.0.0.1:'+server.address().port);
-await page.locator('#closeCloud').waitFor();
-assert.match(await page.locator('.cloud-connect-hint').innerText(),/lenovo/);
-assert.equal(await page.locator('#connectCloud').evaluate(e=>e.classList.contains('cloud-disconnected')),true);
-await page.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);
-await page.locator('#ownerKey').fill('lenovo');await page.locator('#loginCloud').click();
-await page.waitForFunction(()=>document.querySelector('#connectCloud').classList.contains('cloud-connected'));
+await page.locator('#saveCloud').waitFor();
 assert.equal(await page.locator('#resetBtn').count(),0);
 for(const name of ['W1','Next 3 Weeks']){
  await page.locator('[data-tab="'+name+'"]').click({button:'right'});
@@ -41,8 +36,6 @@ assert.equal(await page.evaluate(()=>data[active].length),0);
 assert.equal(await page.evaluate(()=>data.W1.length),1);
 assert.equal(await page.evaluate(()=>dailyPlans['2026-09-15'].length),1);
 await page.locator('#undoBtn').click();assert.equal(await page.evaluate(()=>data[active].length),2);
-await page.locator('#connectCloud').click();await page.locator('#disconnectCloud').click();
-assert.equal(await page.locator('#connectCloud').evaluate(e=>e.classList.contains('cloud-disconnected')),true);
 assert.deepEqual(errors,[]);
 }finally{await browser.close();server.close();await once(server,'close');}
 });

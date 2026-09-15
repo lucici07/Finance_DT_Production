@@ -1,5 +1,6 @@
 (async () => {
   const token = new URLSearchParams(location.hash.slice(1)).get('share');
+  addEventListener('hashchange',()=>{if(new URLSearchParams(location.hash.slice(1)).get('share')!==token)location.reload();});
   const loadScript = src => new Promise((resolve,reject) => { const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>reject(new Error('Unable to load the app. Refresh to retry.'));document.body.append(script); });
   const navigationKey='financeNavigationV1:'+location.pathname+':'+(token||'owner');
     let rememberedView=null;
@@ -18,11 +19,11 @@
         dailyPlansProductionV1:JSON.stringify(result.state.dailyPlans),pageMetaProductionV1:JSON.stringify(result.state.pageMeta)
       }));
       window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};
-    } else window.workspaceStorage=localStorage;
+    } else {const values=new Map();window.workspaceStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value)),removeItem:key=>values.delete(key)};rememberedView=null;}
     await loadScript('app.js?v=21');
     await loadScript('mobile.js?v=1');
     await loadScript('export.js?v=1');
-    await loadScript(window.sharedSession?'shared-workspace.js?v=1':'sync.js?v=5');
+    await loadScript(window.sharedSession?'shared-workspace.js?v=2':'entry.js?v=1');
     if(rememberedView){
       if(data[rememberedView.active])active=rememberedView.active;
       tabs();render();

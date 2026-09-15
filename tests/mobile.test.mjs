@@ -11,7 +11,7 @@ const base='http://127.0.0.1:'+server.address().port;let browser;
 try{
 browser=await chromium.launch({channel:'msedge',headless:true});
 const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
-const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#closeCloud').click();await page.locator('#connectCloud').waitFor();
+const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#saveCloud').waitFor();
 await page.evaluate(()=>{data.W1=[[1,'Finance','Quarterly plan review','Check the latest budget and follow up on action items.','Cici','2026-09-08','2026-09-10','','WIP','Review forecast','Note '.repeat(20)],[2,'Operations','Prepare status update','Summarize progress','','2026-09-08','','','Not Started','','']];save();tabs();render();dailyPlans['2026-09-08']=[{title:'Discuss weekly progress',details:'Review actions together',status:'WIP'}];selectedDate='2026-09-08';calendarMonth=new Date('2026-09-01T12:00:00');});
 const noOverflow=async()=>assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
 await noOverflow();assert.equal(await page.locator('.tablewrap>table').isVisible(),false);assert.equal(await page.locator('.mobile-task-card').count(),2);
@@ -29,8 +29,8 @@ await page.locator('#weeklyBtn').tap();await page.locator('.mobile-tools summary
 await page.locator('#exportBtn').tap();assert.equal(await page.locator('#exportDialog').isVisible(),true);await page.locator('#closeExport').tap();
 for(const width of [320,412,740]){await page.setViewportSize({width,height:844});await noOverflow();await page.locator('#calendarBtn').tap();await noOverflow();await page.locator('#dashboardBtn').tap();await noOverflow();await page.locator('#weeklyBtn').tap();}
 await page.setViewportSize({width:1280,height:900});assert.equal(await page.locator('.tablewrap>table').isVisible(),true);assert.equal(await page.locator('.mobile-task-list').isVisible(),false);
-await page.setViewportSize({width:390,height:844});await page.locator('#connectCloud').tap();await page.waitForFunction(()=>!document.querySelector('#loginCloud').disabled);await page.locator('#ownerKey').fill(key);await page.locator('#loginCloud').tap();await page.waitForFunction(()=>!document.querySelector('#connectForm').closest('dialog').open);
-page.once('dialog',d=>d.accept());await page.locator('#shareCloud').tap();await page.locator('#shareLink').waitFor({state:'visible'});const link=await page.locator('#shareLink').inputValue();
+await page.setViewportSize({width:390,height:844});
+await page.locator('#shareCloud').tap();await page.locator('#workspaceMode').waitFor();const link=page.url();
 const viewerContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),viewer=await viewerContext.newPage();
 viewer.on('pageerror',e=>errors.push(e.message));await viewer.goto(link);await viewer.locator('#workspaceMode').waitFor();assert.equal(await viewer.locator('#workspaceMode').inputValue(),'viewing');assert.equal(await viewer.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
 await viewer.locator('.mobile-task-card summary').first().tap();assert.equal(await viewer.locator('.mobile-edit-row').first().isVisible(),false);

@@ -12,6 +12,7 @@ const equal=(a,b)=>{let diff=a.length^b.length;for(let i=0;i<a.length;i++)diff|=
 const schemas=[
 'CREATE TABLE IF NOT EXISTS workspace (id INTEGER PRIMARY KEY CHECK(id=1), state TEXT NOT NULL, revision INTEGER NOT NULL, updated TEXT NOT NULL)',
 'CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, page_id TEXT NOT NULL, created TEXT NOT NULL)',
+'CREATE TABLE IF NOT EXISTS independent_workspaces (token TEXT PRIMARY KEY, state TEXT NOT NULL, revision INTEGER NOT NULL, updated TEXT NOT NULL, initial_view TEXT NOT NULL)',
 'CREATE TABLE IF NOT EXISTS workspace_shares (token TEXT PRIMARY KEY, can_edit INTEGER NOT NULL, created TEXT NOT NULL, initial_view TEXT NOT NULL)'
 ];
 const initialized=new WeakMap();
@@ -37,12 +38,32 @@ try{
 const path=new URL(request.url).pathname,method=request.method;
 if(path.startsWith('/api/')){
   if(!env.DB||!env.OWNER_KEY||env.OWNER_KEY.length<6)throw fail(503,'Cloud service is not configured.');
-  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:5});}
+  if(path==='/api/health'&&method==='GET'){await ready(env.DB);return send(200,{service:'finance-dt-sync',version:6});}
+  if(path==='/api/workspaces'&&method==='POST'){
+    const body=await bodyJSON(request);let valid=false;try{valid=validState(body.state);}catch{}
+    if(!valid)throw fail(400,'Invalid workspace.');
+    const view=body.initialView||{},initialView={active:typeof view.active==='string'?view.active:'W1',view:['weekly','calendar','dashboard'].includes(view.view)?view.view:'weekly'};
+    await ready(env.DB);
+    const token=hex(crypto.getRandomValues(new Uint8Array(32))),updated=new Date().toISOString();
+    await env.DB.prepare('INSERT INTO independent_workspaces VALUES (?,?,1,?,?)').bind(hex(await hash(token)),JSON.stringify(body.state),updated,JSON.stringify(initialView)).run();
+    return send(201,{token,revision:1,updated});
+  }
   if(path.startsWith('/api/shared/')&&['GET','PUT'].includes(method)){
     const token=path.slice('/api/shared/'.length);
     if(!/^[a-f0-9]{64}$/.test(token))throw fail(404,'This link is unavailable or has been revoked.');
     await ready(env.DB);
     const tokenHash=hex(await hash(token));
+    const independent=await env.DB.prepare('SELECT * FROM independent_workspaces WHERE token=?').bind(tokenHash).first();
+    if(independent){
+      if(method==='GET')return send(200,{scope:'workspace',canEdit:true,state:JSON.parse(independent.state),revision:independent.revision,updated:independent.updated,initialView:JSON.parse(independent.initial_view)});
+      if(request.headers.get('X-Workspace-Mode')!=='editing')throw fail(403,'Switch to Editing before saving.');
+      const body=await bodyJSON(request);let valid=false;try{valid=validState(body.state);}catch{}
+      if(!valid||!Number.isSafeInteger(body.revision)||body.revision<1)throw fail(400,'Invalid workspace.');
+      const updated=new Date().toISOString();
+      const result=await env.DB.prepare('UPDATE independent_workspaces SET state=?,revision=revision+1,updated=? WHERE token=? AND revision=?').bind(JSON.stringify(body.state),updated,tokenHash,body.revision).run();
+      if(result.meta.changes!==1)throw fail(409,'Cloud data changed. Download a backup, then use Load latest.');
+      return send(200,{revision:body.revision+1,updated});
+    }
     const grant=await env.DB.prepare('SELECT * FROM workspace_shares WHERE token=?').bind(tokenHash).first();
     if(grant){
       if(method==='GET'){

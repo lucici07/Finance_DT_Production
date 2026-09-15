@@ -2,11 +2,12 @@
 const session=window.sharedSession,$s=s=>document.querySelector(s);
 let revision=session.revision,synced=stateJSON(),updated=session.updated,busy=false,revoked=false,error='';
 const controls=document.createElement('div');controls.className='cloud-controls share-session-controls';
-controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload">Load latest</button><button id="sharedBackup">Download backup</button>';
+controls.innerHTML='<label class="workspace-mode-label">Mode <select id="workspaceMode"><option value="viewing">Viewing</option><option value="editing">Editing</option></select></label><button id="sharedSave" class="primary">Save</button><button id="sharedReload">Load latest</button><button id="sharedBackup">Download backup</button><button id="sharedShare">Share</button><a href="./" class="button">New workspace</a>';
 $s('.titleblock').after(controls);
 $s('#workspaceMode').disabled=!session.canEdit;
 $s('#saveState').setAttribute('role','status');
-const allowed='#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
+$s('#sharedShare').onclick=async()=>{const url=location.href;try{await navigator.clipboard.writeText(url);alert('Workspace link copied. Keep this link to reopen your content. Anyone with this link can view and switch to Editing.');}catch{prompt('Copy and keep your workspace link:',url);}};
+const allowed='#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
 function mayUse(element){return !!element.closest(allowed);}
 function markControls(){
   document.querySelectorAll('button,input,select,textarea').forEach(el=>{
