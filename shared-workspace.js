@@ -7,6 +7,7 @@ $s('.titleblock').after(controls);
 $s('#workspaceMode').disabled=!session.canEdit;
 $s('#saveState').setAttribute('role','status');
 $s('#sharedShare').onclick=async()=>{const url=location.href;try{await navigator.clipboard.writeText(url);alert('Workspace link copied. Keep this link to reopen your content. Anyone with this link can view and switch to Editing.');}catch{prompt('Copy and keep your workspace link:',url);}};
+if(window.sharePointBridge)$s('#sharedShare').onclick=()=>window.sharePointBridge.share();
 const allowed='#workspaceViews,#workspaceLibrary,#libraryDialog,#weeklyBtn,#calendarBtn,#dashboardBtn,#backToWeekly,#prevMonth,#nextMonth,#todayBtn,#monthTitle,#applyMonth,#monthWheel,#yearWheel,#dashboardWeek,#statusFilter,#search,#zoomIn,#zoomOut,#zoomRange,#zoomValue,#exportBtn,#exportDialog button,#exportDialog select,#dashboardExportPdf,#dashboardRefresh,#refreshBtn,#privacyBtn,#railAI,#closeAgent,#chatInput,#chatForm,.suggestions button,[data-tab],[data-date],.note-link,.share-session-controls a,.share-session-controls button,.share-session-controls select,#privacyDialog button,#monthPicker button';
 function mayUse(element){return !!element.closest(allowed);}
 function markControls(){
@@ -49,6 +50,7 @@ for(const event of ['click','dblclick','contextmenu','dragstart','drop','paste',
 new MutationObserver(markControls).observe(document.querySelector('.app'),{childList:true,subtree:true});
 function draftOpen(){return !!inlineEdit||$s('#editDrawer').classList.contains('open')||$s('#todoDialog').open||$s('#newPageDialog').open;}
 async function request(method='GET',body){
+  if(window.sharePointBridge){const result=await window.sharePointBridge.request(method,body);if(method==='PUT')window.lastSharePointSave=JSON.stringify(body.state);return result;}
   let response;
   try{response=await fetch(new URL('api/shared/'+session.token,location.href),{method,headers:body?{'Content-Type':'application/json','X-Workspace-Mode':'editing'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:AbortSignal.timeout(20000)});}
   catch{throw new Error('Cannot reach cloud. Changes remain in this tab. Retry when connected.');}
@@ -62,7 +64,7 @@ async function request(method='GET',body){
 }
 function apply(result){
   restoreState(JSON.stringify(result.state));undoStack=[];redoStack=[];updateHistoryButtons();
-  revision=result.revision;updated=result.updated;synced=stateJSON();error='';
+  revision=result.revision;updated=result.updated;synced=stateJSON();error='';if(window.sharePointBridge)window.lastSharePointSave=stateJSON();
 }
 const oldSave=save,oldRestore=restoreState;
 save=function(...args){if(!session.editing)return;oldSave(...args);error='';status();};

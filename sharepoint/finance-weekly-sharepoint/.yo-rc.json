@@ -1,0 +1,23 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "finance-weekly-sharepoint",
+    "environment": "spo",
+    "useGulp": false,
+    "componentType": "webpart",
+    "template": "none",
+    "componentName": "FinanceWeekly",
+    "componentDescription": "Personal weekly planning workspace",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.14.0",
+    "sdksVersions": {},
+    "version": "1.22.2",
+    "libraryName": "finance-weekly-sharepoint",
+    "libraryId": "6a142ab8-dfdb-42ab-83d9-430125853750",
+    "packageManager": "npm",
+    "solutionShortDescription": "finance-weekly-sharepoint description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false
+  }
+}

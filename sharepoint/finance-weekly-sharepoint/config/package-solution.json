@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "finance-weekly-sharepoint-client-side-solution",
+    "id": "6a142ab8-dfdb-42ab-83d9-430125853750",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.2"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "finance-weekly-sharepoint description"
+      },
+      "longDescription": {
+        "default": "finance-weekly-sharepoint description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "finance-weekly-sharepoint Feature",
+        "description": "The feature that activates elements of the finance-weekly-sharepoint solution.",
+        "id": "547729c2-2c0a-4f08-97c9-e65ed2c156d7",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/finance-weekly-sharepoint.sppkg"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "finance-weekly-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/financeWeekly/FinanceWeeklyWebPart.js",
+          "manifest": "./src/webparts/financeWeekly/FinanceWeeklyWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "FinanceWeeklyWebPartStrings": "lib/webparts/financeWeekly/loc/{locale}.js"
+  }
+}
