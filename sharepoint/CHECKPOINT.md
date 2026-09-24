@@ -1,43 +1,41 @@
-# Paused checkpoint
+# SharePoint build checkpoint — resumed and packaged
 
-Paused at the user's request on 2026-09-23. Do not resume builds or deployment until asked.
+Updated after the resumed work on 2026-09-23 (America/New_York).
 
-## Agreed outcome
-Keep the existing weekly-planning UI and use SharePoint for storage:
-https://lenovonam.sharepoint.com/sites/WeeklyCatch-Up
-Default to the signed-in member's workspace; allow member selection for read-only viewing, including by the manager. No strict member-to-member data isolation was requested.
+## Ready locally
 
-## Implemented locally
-- Separate SPFx 1.22.2 web-part project in finance-weekly-sharepoint/.
-- FinanceWeeklyWebPart.ts is the host source; prepare.mjs copies it into the generated project and bundles the current HTML/CSS/JS.
-- storage.mjs uses SPHttpClient transport, one list per fiscal year, indexed workspace directory and immutable JSON attachment snapshots with ETag-protected pointer updates.
-- Each person has one workspace per fiscal year. Every save also creates a snapshot item; snapshots consume site storage and need a retention policy.
-- April is a configurable default fiscal start month, not a confirmed company setting.
-- JSON import/export, read-only other-member view, member/year navigation, existing calendar and exports.
-- Optional bridge hooks in shared-workspace.js; the original hosted app is not redeployed.
-- Chinese deployment guide and a read-only existing-workspace export utility.
+- Clean SPFx 1.22.2 production build and package completed with no compiler/lint warnings or errors.
+- Installer: finance-weekly-sharepoint/sharepoint/solution/finance-weekly-sharepoint.sppkg
+- SHA-256: 8deb388a5a3c11fc9a4ae06c9c6a6656c8bde7fa2c804a20176263a52040be45
+- Archive verified: 16 entries, one current JavaScript bundle, app manifest present.
+- Dependency lock is committed with source. Build artifacts and dependency directories remain ignored.
+- Final focused suite: 11 tests passed (storage, enforced CSP, Excel/PDF actions, member/year switching, draft protection, list setup recovery).
+- Earlier full original-app regression suite: 20 passed at the previous checkpoint.
 
-## Verification already completed
-- Full regression suite including initial SharePoint tests: 20 passed.
-- Added first-save upload retry test afterward; all 9 storage tests passed.
-- Headless Edge tested the packaged UI with a simulated bridge.
-- No live SharePoint login, real Lists API, tenant CSP, or App Catalog deployment has been verified.
+## Implementation
 
-## Not finished
-- SPFx dependency installation and production compilation/package generation are incomplete.
-- No .sppkg has been produced. Do not describe this as deployed or fully connected.
-- No SPFx package-lock.json exists yet; finish npm install before using npm ci.
-- npm installation in the OneDrive workspace was stopped because it was very slow.
-- A second install in a temporary directory was also stopped at the user's pause request.
-- A project-local Node 22 runtime exists under runtime/node22 (ignored by Git). System Node is 24.
-- The temporary build directory path is recorded in runtime/sharepoint-build-path.txt (local only).
-- Continue by checking partial install state, finishing dependencies with Node 22, running prepare.mjs, compiling, fixing any compiler/linter findings, and packaging.
-- sharepoint/build.ps1 expects the Heft executable at node_modules/@rushstack/heft/lib/start.js; verify the installed package's actual bin path.
-- Review/test host property-pane updates and the real tenant deployment path.
-- Current app's multiple independent workspace-link library is replaced with person/year navigation in this first adapter; migration of several views for one person is not implemented.
-- Agree with the site owner how to retain snapshots and manage historical-year permissions.
-- Package installation needs an App Catalog administrator or equivalent company deployment route. Access to Shared Documents alone is insufficient.
+Target: https://lenovonam.sharepoint.com/sites/WeeklyCatch-Up
+Existing UI runs in an isolated same-origin frame, initialized from compiled SPFx code. No inline script injection or script-policy exception is needed. This replaced the provisional inline-script approach.
 
-## Safety/state
-No company SharePoint resources or existing production data were modified.
-Dependency directories, generated embedded assets, temporary files and runtime credentials/data must remain out of Git.
+Each fiscal-year list stores member workspace headers and immutable JSON snapshot attachments. Save commits the pointer with an exact ETag. All members default to their own workspace; other members open read-only in the app. List permissions are not per-user isolation, as agreed.
+
+The fiscal year start month defaults to April and remains configurable/unconfirmed. One workspace per person per year; legacy multiple independent workspace-link views are not automatically merged.
+
+## Rebuild
+
+- Standard: install Node 22.14+ within Node 22; npm ci in finance-weekly-sharepoint; then node sharepoint/build.mjs from repository root.
+- This machine: node sharepoint/build.mjs --temporary uses the local Node 22 runtime and cached build directory.
+- Windows PowerShell script execution was disabled. The Node build script works without changing that policy.
+- runtime/sharepoint-build-path.txt records the local cache path.
+- The slow full npm extraction was stopped after the required compiler/package tools successfully ran. npm install --package-lock-only --ignore-scripts completed. The cached directory suffices for the verified clean build; use npm ci for a fresh complete dependency installation.
+- Root app tests use system Node 24; SPFx build uses Node 22.
+
+## Remaining external validation
+
+The package has NOT been installed in the company tenant. No company SharePoint resources or production data were changed.
+
+A SharePoint App Catalog administrator/site deployment route must install the package. Then add FinanceWeekly to a modern page, confirm the fiscal month, and initialize the year list with a site-owner account. Test real account save/reload, another member/manager view, permissions and exports.
+
+Use 部署说明.md for handoff. Agree on snapshot retention and historical-year permissions with the site owner. Import only the desired existing workspace backup after choosing the correct year.
+
+Do not describe a successful local build or mocked browser tests as a successful company SharePoint connection.

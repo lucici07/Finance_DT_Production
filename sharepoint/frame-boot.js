@@ -1,5 +1,5 @@
-(async () => {
-  const bridge = window.frameElement.financeBridge;
+export async function mountApp(window, bridge) {
+  /*__FRAME_BINDINGS__*/
   window.sharePointBridge = bridge;
   try {
     const result = await bridge.request('GET');
@@ -7,9 +7,8 @@
     window.sharedSession = {...result, token: 'sharepoint', state: initial, editing: false, canEdit: bridge.canEdit, initialView: {active: Object.keys(initial.data)[0]}};
     const values = new Map(Object.entries({financePlanProductionV1: JSON.stringify(initial.data), futureSheetsProductionV1: JSON.stringify(initial.futureSheets), dailyPlansProductionV1: JSON.stringify(initial.dailyPlans), pageMetaProductionV1: JSON.stringify(initial.pageMeta)}));
     window.workspaceStorage = {getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)), removeItem: key => values.delete(key)};
-    for (const source of window.financeAppScripts) {
-      const script = document.createElement('script'); script.textContent = source; document.body.append(script);
-    }
+    const workspaceStorage = window.workspaceStorage;
+    /*__FINANCE_APP_CODE__*/
     document.querySelector('.profile b').textContent = bridge.displayName;
     document.querySelector('.profile small').textContent = 'FY ' + bridge.year;
     document.querySelector('.avatar').textContent = bridge.displayName.slice(0, 1);
@@ -40,4 +39,4 @@
   } catch (error) {
     document.body.replaceChildren(); const message = document.createElement('p'); message.textContent = error.message; document.body.append(message);
   }
-})();
+}

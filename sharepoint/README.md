@@ -14,10 +14,16 @@ This preserves custom columns, page order, weekly rows, calendar tasks and task 
 
 There are approximately 20 live workspace items, **plus snapshot items for every Save**. EntryType and Title indexes keep directory and owner lookups selective; snapshots are fetched by item ID. The 5,000 threshold is not a limit on total saves, and no scan of all snapshots is needed.
 
+## Build status
+
+A clean production package has been generated and checked. See VALIDATION.md for test evidence and CHECKPOINT.md for remaining company deployment steps.
+
+The frame HTML contains no scripts; compiled SPFx code initializes the existing app, including ExcelJS, without inline script injection.
+
 ## Installation
 
 1. Build using Node 22 (SPFx 1.22.2 toolchain).
-2. In sharepoint/finance-weekly-sharepoint run npm ci, npm run build, then npm run package-solution. The build automatically bundles the existing app.
+2. In sharepoint/finance-weekly-sharepoint run npm ci, then from the repository root run node sharepoint/build.mjs. On this machine, node sharepoint/build.mjs --temporary reuses cached build dependencies. The build automatically bundles the existing app and removes stale bundles.
 3. Give sharepoint/finance-weekly-sharepoint/sharepoint/solution/finance-weekly-sharepoint.sppkg to the SharePoint App Catalog administrator. Upload/deploy the package, install on WeeklyCatch-Up if required, and add FinanceWeekly to a modern page.
 4. Configure site URL https://lenovonam.sharepoint.com/sites/WeeklyCatch-Up and confirm fiscal start month.
 5. Open the page as a site owner and click Set up FY ... list. Setup creates the fields and indexes. It requires list-management permission; it is not a bypass for company deployment policy.
